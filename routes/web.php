@@ -3,20 +3,21 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 
-// dashboard pages
-Route::get('/', function () {
-    return view('pages.dashboard.ecommerce', ['title' => 'E-commerce Dashboard']);
-})->name('dashboard');
+// Rutas protegidas (Solo para usuarios logueados)
+Route::middleware(['auth'])->group(function () {
 
-// calender pages
-Route::get('/calendar', function () {
-    return view('pages.calender', ['title' => 'Calendar']);
-})->name('calendar');
+    Route::get('/', function () {
+        return view('pages.dashboard.ecommerce', ['title' => 'E-commerce Dashboard']);
+    })->name('dashboard');
 
-// profile pages
-Route::get('/profile', function () {
-    return view('pages.profile', ['title' => 'Profile']);
-})->name('profile');
+    Route::get('/calendar', function () {
+        return view('pages.calender', ['title' => 'Calendar']);
+    })->name('calendar');
+
+    Route::get('/profile', function () {
+        return view('pages.profile', ['title' => 'Profile']);
+    })->name('profile');
+
 
 // form pages
 Route::get('/form-elements', function () {
@@ -83,8 +84,17 @@ Route::get('/videos', function () {
     return view('pages.ui-elements.videos', ['title' => 'Videos']);
 })->name('videos');
 
+    // ... traslada aquí el resto de tus rutas (form-elements, tables, etc.)
+});
 
 
+
+
+
+
+
+
+require __DIR__.'/auth.php';
 
 
 

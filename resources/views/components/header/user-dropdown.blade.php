@@ -17,7 +17,7 @@
             <img src="/images/user/owner.png" alt="User" />
         </span>
 
-       <span class="block mr-1 font-medium text-theme-sm">Musharof</span>
+       <span class="block mr-1 font-medium text-theme-sm">{{ Auth::user()->name }}</span>
 
         <!-- Chevron Icon -->
         <svg
@@ -45,8 +45,12 @@
     >
         <!-- User Info -->
         <div>
-            <span class="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">Musharof Chowdhury</span>
-            <span class="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">randomuser@pimjo.com</span>
+            <span class="block text-sm font-medium text-black dark:text-white">
+    {{ Auth::user()->name }}
+</span>
+            <span class="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
+                {{ Auth::user()->email }}
+            </span>
         </div>
 
         <!-- Menu Items -->

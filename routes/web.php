@@ -2,12 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
+use Inertia\Inertia;
+use App\Http\Controllers\UserController;
 
 // Rutas protegidas (Solo para usuarios logueados)
 Route::middleware(['auth'])->group(function () {
 
     Route::get('/', function () {
-        return view('pages.dashboard.ecommerce', ['title' => 'E-commerce Dashboard']);
+        return view('pages.dashboard.ecommerce', ['title' => 'InvenCoo']);
     })->name('dashboard');
 
     Route::get('/calendar', function () {
@@ -18,6 +20,7 @@ Route::middleware(['auth'])->group(function () {
         return view('pages.profile', ['title' => 'Profile']);
     })->name('profile');
 
+    Route::resource('users', UserController::class);
 
 // form pages
 Route::get('/form-elements', function () {

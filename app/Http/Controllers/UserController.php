@@ -15,8 +15,6 @@ class UserController extends Controller
         $users = User::paginate(10);
 
         // 2. Renderizamos la vista 'Users/Index' y le pasamos los datos
-        return Inertia::render('Users/Index', [
-            'users' => $users
-        ]);
+        return view('pages.users.index', compact('users'));
     }
 }

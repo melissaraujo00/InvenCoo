@@ -15,6 +15,11 @@ class MenuHelper
                 ],
             ],
             [
+                'icon' => 'users',
+                'name' => 'Usuarios',
+                'path' => '/users'
+            ],
+            [
                 'icon' => 'calendar',
                 'name' => 'Calendar',
                 'path' => '/calendar',

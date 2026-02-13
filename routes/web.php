@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use Inertia\Inertia;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProfileController;
 
 // Rutas protegidas (Solo para usuarios logueados)
 Route::middleware(['auth'])->group(function () {
@@ -16,9 +17,7 @@ Route::middleware(['auth'])->group(function () {
         return view('pages.calender', ['title' => 'Calendar']);
     })->name('calendar');
 
-    Route::get('/profile', function () {
-        return view('pages.profile', ['title' => 'Profile']);
-    })->name('profile');
+    Route::resource('/profile', ProfileController::class);
 
     Route::resource('users', UserController::class);
 
@@ -58,9 +57,6 @@ Route::get('/signin', function () {
     return view('pages.auth.signin', ['title' => 'Sign In']);
 })->name('signin');
 
-Route::get('/signup', function () {
-    return view('pages.auth.signup', ['title' => 'Sign Up']);
-})->name('signup');
 
 // ui elements pages
 Route::get('/alerts', function () {

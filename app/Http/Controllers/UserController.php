@@ -2,19 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User; // Importar el modelo User
+use App\Models\User;
 use Illuminate\Http\Request;
-use Inertia\Inertia; // Importar Inertia
+use Inertia\Inertia; 
 
 class UserController extends Controller
 {
     public function index()
     {
-        // 1. Obtenemos todos los usuarios (menos la contraseña por seguridad)
-        // Usamos 'paginate(10)' para que si hay muchos, no colapse la pantalla.
+
         $users = User::paginate(10);
 
-        // 2. Renderizamos la vista 'Users/Index' y le pasamos los datos
         return view('pages.users.index', compact('users'));
     }
 }

@@ -2,160 +2,229 @@
 
 @section('content')
 <x-common.page-breadcrumb pageTitle="Editar Usuario" />
+
 <div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
+    {{-- Header con título y botones --}}
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 class="text-title-md2 font-bold text-black dark:text-white">
-            Editar Usuario
-        </h2>
+        <div>
+            <h2 class="text-title-md2 font-bold text-gray-800 dark:text-white/90">
+                Editar Usuario: {{ $user->name }} {{ $user->last_name }}
+            </h2>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">
+                Modifique los campos que desea actualizar
+            </p>
+        </div>
+
+        <div class="flex gap-3">
+            {{-- Badge de estado --}}
+            <div class="flex items-center px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <span class="text-sm text-gray-600 dark:text-gray-400 mr-2">Estado actual:</span>
+                <x-tables.status-badge :status="$user->status" />
+            </div>
+
+            <x-form.button href="{{ route('users.index') }}" variant="secondary" size="md">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Volver al listado
+            </x-form.button>
+        </div>
     </div>
 
-    <form action="{{ route('users.update', $user->id) }}" method="POST">
+    {{-- Formulario principal --}}
+    <form action="{{ route('users.update', $user) }}" method="POST">
         @csrf
-        @method('PUT') 
+        @method('PUT')
 
-        <x-common.component-card title="Editar Información de {{ $user->name }}">
+        {{-- Tarjeta: Información Personal --}}
+        <x-common.component-card title="Información Personal" class="mb-6">
             <div class="p-6">
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                            Nombre <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="name" value="{{ old('name', $user->name) }}" placeholder="Ej. Juan"
-                            class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
-                        @error('name') <span class="text-sm text-red-500 mt-1">{{ $message }}</span> @enderror
+                    {{-- Columna izquierda --}}
+                    <div class="space-y-6">
+                        {{-- Nombre --}}
+                        <x-form.group name="name" label="Nombre" :required="true">
+                            <x-form.input
+                                name="name"
+                                placeholder="Ej. Juan Carlos"
+                                :required="true"
+                                :value="$user->name"
+                            />
+                        </x-form.group>
+
+                        {{-- Email --}}
+                        <x-form.group name="email" label="Correo Electrónico" :required="true">
+                            <x-form.input
+                                name="email"
+                                type="email"
+                                placeholder="ejemplo@correo.com"
+                                :required="true"
+                                :value="$user->email"
+                            />
+                            @if($user->email_verified_at)
+                                <p class="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Verificado
+                                </p>
+                            @endif
+                        </x-form.group>
+
+                        {{-- Número de teléfono/ID --}}
+                        <x-form.group name="number" label="Número de Teléfono / ID" :required="true">
+                            <x-form.input
+                                name="number"
+                                placeholder="0412-1234567"
+                                :required="true"
+                                :value="$user->number"
+                            />
+                        </x-form.group>
                     </div>
 
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                            Apellido <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="last_name" value="{{ old('last_name', $user->last_name) }}" placeholder="Ej. Pérez"
-                            class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
-                        @error('last_name') <span class="text-sm text-red-500 mt-1">{{ $message }}</span> @enderror
+                    {{-- Columna derecha --}}
+                    <div class="space-y-6">
+                        {{-- Apellido --}}
+                        <x-form.group name="last_name" label="Apellido" :required="true">
+                            <x-form.input
+                                name="last_name"
+                                placeholder="Ej. Pérez Martínez"
+                                :required="true"
+                                :value="$user->last_name"
+                            />
+                        </x-form.group>
+
+                        {{-- Oficina --}}
+                        <x-form.group name="office_id" label="Oficina Asignada" :required="true">
+                            <x-form.select
+                                name="office_id"
+                                :options="$offices->pluck('name', 'id')"
+                                :value="$user->office_id"
+                                placeholder="Seleccionar oficina"
+                            />
+                        </x-form.group>
+
+                        {{-- Estado --}}
+                        <x-form.group name="status" label="Estado del Usuario">
+                            <x-form.select
+                                name="status"
+                                :options="['1' => 'Activo', '0' => 'Inactivo']"
+                                :value="$user->status"
+                                placeholder="Seleccionar estado"
+                            />
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Los usuarios inactivos no pueden acceder al sistema
+                            </p>
+                        </x-form.group>
                     </div>
-
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                            Correo Electrónico <span class="text-red-500">*</span>
-                        </label>
-                        <input type="email" name="email" value="{{ old('email', $user->email) }}" placeholder="info@ejemplo.com"
-                            class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
-                        @error('email') <span class="text-sm text-red-500 mt-1">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                            Número / ID <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="number" value="{{ old('number', $user->number) }}" placeholder="Ej. 00000000"
-                            class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
-                        @error('number') <span class="text-sm text-red-500 mt-1">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                            Oficina Asignada <span class="text-red-500">*</span>
-                        </label>
-                        <div x-data="{ isOptionSelected: true }" class="relative z-20 bg-transparent">
-                            <select name="office_id"
-                                class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-                                :class="isOptionSelected && 'text-gray-800 dark:text-white/90'" @change="isOptionSelected = true">
-                                <option value="" class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">Seleccionar Oficina</option>
-                                @foreach($offices as $office)
-                                    <option value="{{ $office->id }}" {{ old('office_id', $user->office_id) == $office->id ? 'selected' : '' }} class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">
-                                        {{ $office->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <span class="pointer-events-none absolute top-1/2 right-4 z-30 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                                <svg class="stroke-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke="" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                            </span>
-                        </div>
-                        @error('office_id') <span class="text-sm text-red-500 mt-1">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                            Estado <span class="text-red-500">*</span>
-                        </label>
-                        <div x-data="{ isOptionSelected: true }" class="relative z-20 bg-transparent">
-                            <select name="status"
-                                class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
-                                :class="isOptionSelected && 'text-gray-800 dark:text-white/90'" @change="isOptionSelected = true">
-                                {{-- Usamos old() con el valor actual del usuario como default --}}
-                                <option value="1" {{ old('status', $user->status) == '1' ? 'selected' : '' }} class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">Activo</option>
-                                <option value="0" {{ old('status', $user->status) == '0' ? 'selected' : '' }} class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">Inactivo</option>
-                            </select>
-                            <span class="pointer-events-none absolute top-1/2 right-4 z-30 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                                <svg class="stroke-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke="" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                            </span>
-                        </div>
-                        @error('status') <span class="text-sm text-red-500 mt-1">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="col-span-1 md:col-span-2 mt-2">
-                        <hr class="border-gray-200 dark:border-gray-700 mb-4">
-                        <h4 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cambiar Contraseña (Opcional)</h4>
-                    </div>
-
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                            Nueva Contraseña
-                        </label>
-                        <div x-data="{ showPassword: false }" class="relative">
-                            <input name="password" :type="showPassword ? 'text' : 'password'" placeholder="Dejar en blanco para mantener"
-                                class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 pl-4 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
-
-                            <span @click="showPassword = !showPassword" class="absolute top-1/2 right-4 z-30 -translate-y-1/2 cursor-pointer">
-                                <svg x-show="!showPassword" class="fill-gray-500 dark:fill-gray-400" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M10.0002 13.8619C7.23361 13.8619 4.86803 12.1372 3.92328 9.70241C4.86804 7.26761 7.23361 5.54297 10.0002 5.54297C12.7667 5.54297 15.1323 7.26762 16.0771 9.70243C15.1323 12.1372 12.7667 13.8619 10.0002 13.8619ZM10.0002 4.04297C6.48191 4.04297 3.49489 6.30917 2.4155 9.4593C2.3615 9.61687 2.3615 9.78794 2.41549 9.94552C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C13.5184 15.3619 16.5055 13.0957 17.5849 9.94555C17.6389 9.78797 17.6389 9.6169 17.5849 9.45932C16.5055 6.30919 13.5184 4.04297 10.0002 4.04297ZM9.99151 7.84413C8.96527 7.84413 8.13333 8.67606 8.13333 9.70231C8.13333 10.7286 8.96527 11.5605 9.99151 11.5605H10.0064C11.0326 11.5605 11.8646 10.7286 11.8646 9.70231C11.8646 8.67606 11.0326 7.84413 10.0064 7.84413H9.99151Z" />
-                                </svg>
-                                <svg x-show="showPassword" class="fill-gray-500 dark:fill-gray-400" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4.63803 3.57709C4.34513 3.2842 3.87026 3.2842 3.57737 3.57709C3.28447 3.86999 3.28447 4.34486 3.57737 4.63775L4.85323 5.91362C3.74609 6.84199 2.89363 8.06395 2.4155 9.45936C2.3615 9.61694 2.3615 9.78801 2.41549 9.94558C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C11.255 15.3619 12.4422 15.0737 13.4994 14.5598L15.3625 16.4229C15.6554 16.7158 16.1302 16.7158 16.4231 16.4229C16.716 16.13 16.716 15.6551 16.4231 15.3622L4.63803 3.57709ZM12.3608 13.4212L10.4475 11.5079C10.3061 11.5423 10.1584 11.5606 10.0064 11.5606H9.99151C8.96527 11.5606 8.13333 10.7286 8.13333 9.70237C8.13333 9.5461 8.15262 9.39434 8.18895 9.24933L5.91885 6.97923C5.03505 7.69015 4.34057 8.62704 3.92328 9.70247C4.86803 12.1373 7.23361 13.8619 10.0002 13.8619C10.8326 13.8619 11.6287 13.7058 12.3608 13.4212ZM16.0771 9.70249C15.7843 10.4569 15.3552 11.1432 14.8199 11.7311L15.8813 12.7925C16.6329 11.9813 17.2187 11.0143 17.5849 9.94561C17.6389 9.78803 17.6389 9.61696 17.5849 9.45938C16.5055 6.30925 13.5184 4.04303 10.0002 4.04303C9.13525 4.04303 8.30244 4.17999 7.52218 4.43338L8.75139 5.66259C9.1556 5.58413 9.57311 5.54303 10.0002 5.54303C12.7667 5.54303 15.1323 7.26768 16.0771 9.70249Z" />
-                                </svg>
-                            </span>
-                        </div>
-                        @error('password') <span class="text-sm text-red-500 mt-1">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                            Confirmar Nueva Contraseña
-                        </label>
-                        <div x-data="{ showPasswordConfirm: false }" class="relative">
-                            <input name="password_confirmation" :type="showPasswordConfirm ? 'text' : 'password'" placeholder="Repetir nueva contraseña"
-                                class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 pl-4 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
-
-                            <span @click="showPasswordConfirm = !showPasswordConfirm" class="absolute top-1/2 right-4 z-30 -translate-y-1/2 cursor-pointer">
-                                <svg x-show="!showPasswordConfirm" class="fill-gray-500 dark:fill-gray-400" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M10.0002 13.8619C7.23361 13.8619 4.86803 12.1372 3.92328 9.70241C4.86804 7.26761 7.23361 5.54297 10.0002 5.54297C12.7667 5.54297 15.1323 7.26762 16.0771 9.70243C15.1323 12.1372 12.7667 13.8619 10.0002 13.8619ZM10.0002 4.04297C6.48191 4.04297 3.49489 6.30917 2.4155 9.4593C2.3615 9.61687 2.3615 9.78794 2.41549 9.94552C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C13.5184 15.3619 16.5055 13.0957 17.5849 9.94555C17.6389 9.78797 17.6389 9.6169 17.5849 9.45932C16.5055 6.30919 13.5184 4.04297 10.0002 4.04297ZM9.99151 7.84413C8.96527 7.84413 8.13333 8.67606 8.13333 9.70231C8.13333 10.7286 8.96527 11.5605 9.99151 11.5605H10.0064C11.0326 11.5605 11.8646 10.7286 11.8646 9.70231C11.8646 8.67606 11.0326 7.84413 10.0064 7.84413H9.99151Z" />
-                                </svg>
-                                <svg x-show="showPasswordConfirm" class="fill-gray-500 dark:fill-gray-400" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4.63803 3.57709C4.34513 3.2842 3.87026 3.2842 3.57737 3.57709C3.28447 3.86999 3.28447 4.34486 3.57737 4.63775L4.85323 5.91362C3.74609 6.84199 2.89363 8.06395 2.4155 9.45936C2.3615 9.61694 2.3615 9.78801 2.41549 9.94558C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C11.255 15.3619 12.4422 15.0737 13.4994 14.5598L15.3625 16.4229C15.6554 16.7158 16.1302 16.7158 16.4231 16.4229C16.716 16.13 16.716 15.6551 16.4231 15.3622L4.63803 3.57709ZM12.3608 13.4212L10.4475 11.5079C10.3061 11.5423 10.1584 11.5606 10.0064 11.5606H9.99151C8.96527 11.5606 8.13333 10.7286 8.13333 9.70237C8.13333 9.5461 8.15262 9.39434 8.18895 9.24933L5.91885 6.97923C5.03505 7.69015 4.34057 8.62704 3.92328 9.70247C4.86803 12.1373 7.23361 13.8619 10.0002 13.8619C10.8326 13.8619 11.6287 13.7058 12.3608 13.4212ZM16.0771 9.70249C15.7843 10.4569 15.3552 11.1432 14.8199 11.7311L15.8813 12.7925C16.6329 11.9813 17.2187 11.0143 17.5849 9.94561C17.6389 9.78803 17.6389 9.61696 17.5849 9.45938C16.5055 6.30925 13.5184 4.04303 10.0002 4.04303C9.13525 4.04303 8.30244 4.17999 7.52218 4.43338L8.75139 5.66259C9.1556 5.58413 9.57311 5.54303 10.0002 5.54303C12.7667 5.54303 15.1323 7.26768 16.0771 9.70249Z" />
-                                </svg>
-                            </span>
-                        </div>
-                    </div>
-
                 </div>
 
-                <div class="mt-6 flex justify-end gap-4">
-                    <a href="{{ route('users.index') }}"
-                        class="flex items-center justify-center rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-center font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]">
-                        Cancelar
-                    </a>
-                    <button type="submit"
-                        class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 transition-colors">
-                        Actualizar Usuario
-                    </button>
+                {{-- Separador para sección de cambio de contraseña --}}
+                <hr class="border-gray-200 dark:border-gray-700 my-6">
+
+                {{-- Alerta informativa para cambio de contraseña --}}
+                <div class="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div>
+                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                <span class="font-semibold">Importante:</span> Complete los siguientes campos solo si desea cambiar la contraseña actual. Si la contraseña no necesita cambios, déjelos en blanco.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Título de sección de seguridad --}}
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+                    Cambiar Contraseña
+                </h3>
+
+                {{-- Campos de contraseña en grid --}}
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {{-- Nueva Contraseña (el componente password ya incluye su propio label) --}}
+                    <x-form.password
+                        name="password"
+                        label="Nueva Contraseña"
+                        placeholder="Mínimo 8 caracteres"
+                        helper="Déjelo en blanco si no desea cambiarla"
+                    />
+
+                    {{-- Confirmar Nueva Contraseña --}}
+                    <x-form.group name="password_confirmation" label="Confirmar Nueva Contraseña">
+                        <x-form.input
+                            type="password"
+                            name="password_confirmation"
+                            placeholder="Repite la nueva contraseña"
+                        />
+                    </x-form.group>
+                </div>
+
+                {{-- Barra de fortaleza de contraseña (solo visible si hay algo escrito) --}}
+                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
+                     x-data="{ show: false }"
+                     x-init="$watch('$el.querySelector('input[name=password]').value', value => show = value.length > 0)"
+                     x-show="show"
+                     x-cloak>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        <span class="font-semibold">Requisitos de seguridad:</span> La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y caracteres especiales para máxima seguridad.
+                    </p>
                 </div>
             </div>
         </x-common.component-card>
+
+        {{-- Tarjeta: Auditoría --}}
+        <x-common.component-card title="Información de Auditoría" class="mb-6">
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha de creación</p>
+                        <p class="text-sm font-medium text-gray-800 dark:text-white/90 mt-1">
+                            {{ $user->created_at->format('d/m/Y H:i') }}
+                        </p>
+                    </div>
+
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última actualización</p>
+                        <p class="text-sm font-medium text-gray-800 dark:text-white/90 mt-1">
+                            {{ $user->updated_at->format('d/m/Y H:i') }}
+                        </p>
+                    </div>
+
+                    @if($user->email_verified_at)
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email verificado</p>
+                        <p class="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
+                            {{ $user->email_verified_at->format('d/m/Y H:i') }}
+                        </p>
+                    </div>
+                    @else
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email verificado</p>
+                        <p class="text-sm font-medium text-yellow-600 dark:text-yellow-400 mt-1">
+                            Pendiente de verificación
+                        </p>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </x-common.component-card>
+
+        {{-- Botones de acción --}}
+        <div class="flex flex-col sm:flex-row justify-end gap-3 mt-8">
+            <x-form.button type="button" href="{{ route('users.index') }}" variant="secondary" size="lg">
+                Cancelar
+            </x-form.button>
+
+            <x-form.button type="submit" variant="primary" size="lg">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Actualizar Usuario
+            </x-form.button>
+        </div>
     </form>
 </div>
 @endsection

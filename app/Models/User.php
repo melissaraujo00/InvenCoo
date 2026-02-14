@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class User extends Authenticatable
 {
@@ -19,13 +20,18 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'last_name', 
+        'last_name',
         'email',
         'password',
         'number',
         'office_id',
         'status',
     ];
+
+    public function office()
+    {
+        return $this->belongsTo(Office::class, 'office_id');
+    }
 
     /**
      * The attributes that should be hidden for serialization.

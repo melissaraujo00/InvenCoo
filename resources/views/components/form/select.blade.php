@@ -1,0 +1,77 @@
+@props([
+    'name' => '',
+    'id' => null,
+    'label' => null,
+    'options' => [],
+    'value' => null,
+    'placeholder' => 'Seleccionar opción',
+    'required' => false,
+    'disabled' => false,
+    'helper' => null,
+    'errorName' => null,
+])
+
+@php
+    $id = $id ?? $name;
+    $errorName = $errorName ?? $name;
+    $hasError = $errors->has($errorName);
+    $errorMessage = $errors->first($errorName);
+
+    $baseClasses = 'dark:bg-dark-900 shadow-theme-xs h-11 w-full appearance-none rounded-lg border bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30';
+
+    $stateClasses = $hasError
+        ? 'border-error-300 focus:border-error-300 focus:ring-error-500/10 dark:border-error-700 dark:focus:border-error-800'
+        : 'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:focus:border-brand-800';
+
+    $disabledClasses = $disabled ? 'disabled:border-gray-100 disabled:placeholder:text-gray-300 dark:disabled:border-gray-800 dark:disabled:placeholder:text-white/15' : '';
+
+    $selectedValue = old($name, $value);
+@endphp
+
+<div x-data="{
+    selectedValue: '{{ $selectedValue }}',
+    init() {
+        this.selectedValue = '{{ $selectedValue }}';
+    }
+}" class="relative z-20 bg-transparent">
+    @if($label)
+        <label for="{{ $id }}" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+            {{ $label }}
+            @if($required) <span class="text-red-500">*</span> @endif
+        </label>
+    @endif
+
+    <div class="relative">
+        <select
+            name="{{ $name }}"
+            id="{{ $id }}"
+            x-model="selectedValue"
+            {{ $required ? 'required' : '' }}
+            {{ $disabled ? 'disabled' : '' }}
+            {{ $attributes->merge(['class' => "$baseClasses $stateClasses $disabledClasses"]) }}
+        >
+            <option value="" class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">{{ $placeholder }}</option>
+            @foreach($options as $optionValue => $optionLabel)
+                <option value="{{ $optionValue }}"
+                        class="text-gray-700 dark:bg-gray-900 dark:text-gray-400"
+                        {{ $selectedValue == $optionValue ? 'selected' : '' }}>
+                    {{ $optionLabel }}
+                </option>
+            @endforeach
+        </select>
+
+        <span class="pointer-events-none absolute top-1/2 right-4 z-30 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+            <svg class="stroke-current" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </span>
+    </div>
+
+    @if($helper && !$hasError)
+        <p class="text-theme-xs text-gray-500 dark:text-gray-400 mt-1.5">{{ $helper }}</p>
+    @endif
+
+    @if($hasError)
+        <p class="text-theme-xs text-error-500 mt-1.5">{{ $errorMessage }}</p>
+    @endif
+</div>

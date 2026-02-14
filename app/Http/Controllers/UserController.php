@@ -10,10 +10,15 @@ use Inertia\Inertia;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
 
-        $users = User::paginate(10);
+        $users = User::with([ 'office'])
+            ->when($request->filled('search'), fn($query) =>
+                $query->whereAny(['name', 'last_name', 'email', 'number'], 'LIKE', "%{$request->search}%")
+            )
+            ->paginate(10)
+            ->withQueryString();
 
         return view('pages.users.index', compact('users'));
     }

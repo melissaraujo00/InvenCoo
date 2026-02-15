@@ -120,57 +120,75 @@
                     </div>
                 </div>
 
-                {{-- Separador para sección de cambio de contraseña --}}
+                {{-- Separador --}}
                 <hr class="border-gray-200 dark:border-gray-700 my-6">
 
-                {{-- Alerta informativa para cambio de contraseña --}}
-                <div class="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-                    <div class="flex items-start gap-3">
-                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <div>
-                            <p class="text-sm text-blue-700 dark:text-blue-300">
-                                <span class="font-semibold">Importante:</span> Complete los siguientes campos solo si desea cambiar la contraseña actual. Si la contraseña no necesita cambios, déjelos en blanco.
-                            </p>
+                {{-- Sección de Roles --}}
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+                        Roles y Permisos
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                       @foreach($roles as $role)
+                            <div class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                <input type="checkbox"
+                                    name="roles[]"
+                                    value="{{ $role->id }}"
+                                    id="role_{{ $role->id }}"
+                                    class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-700"
+                                    {{ in_array($role->id, old('roles', $userRoleIds)) ? 'checked' : '' }}>
+                                <label for="role_{{ $role->id }}" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {{ $role->name }}
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+                    @error('roles')
+                        <p class="text-theme-xs text-error-500 mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Separador --}}
+                <hr class="border-gray-200 dark:border-gray-700 my-6">
+
+                {{-- Sección de Cambio de Contraseña --}}
+                <div>
+                    {{-- Alerta informativa --}}
+                    <div class="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <div>
+                                <p class="text-sm text-blue-700 dark:text-blue-300">
+                                    <span class="font-semibold">Importante:</span> Complete los siguientes campos solo si desea cambiar la contraseña actual. Si la contraseña no necesita cambios, déjelos en blanco.
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {{-- Título de sección de seguridad --}}
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
-                    Cambiar Contraseña
-                </h3>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+                        Cambiar Contraseña
+                    </h3>
 
-                {{-- Campos de contraseña en grid --}}
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {{-- Nueva Contraseña (el componente password ya incluye su propio label) --}}
-                    <x-form.password
-                        name="password"
-                        label="Nueva Contraseña"
-                        placeholder="Mínimo 8 caracteres"
-                        helper="Déjelo en blanco si no desea cambiarla"
-                    />
-
-                    {{-- Confirmar Nueva Contraseña --}}
-                    <x-form.group name="password_confirmation" label="Confirmar Nueva Contraseña">
-                        <x-form.input
-                            type="password"
-                            name="password_confirmation"
-                            placeholder="Repite la nueva contraseña"
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {{-- Nueva Contraseña --}}
+                        <x-form.password
+                            name="password"
+                            label="Nueva Contraseña"
+                            placeholder="Mínimo 8 caracteres"
                         />
-                    </x-form.group>
-                </div>
 
-                {{-- Barra de fortaleza de contraseña (solo visible si hay algo escrito) --}}
-                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
-                     x-data="{ show: false }"
-                     x-init="$watch('$el.querySelector('input[name=password]').value', value => show = value.length > 0)"
-                     x-show="show"
-                     x-cloak>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                        <span class="font-semibold">Requisitos de seguridad:</span> La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y caracteres especiales para máxima seguridad.
-                    </p>
+                        {{-- Confirmar Nueva Contraseña --}}
+                        <x-form.group name="password_confirmation" label="Confirmar Nueva Contraseña">
+                            <x-form.input
+                                type="password"
+                                name="password_confirmation"
+                                placeholder="Repite la nueva contraseña"
+                            />
+                        </x-form.group>
+                    </div>
                 </div>
             </div>
         </x-common.component-card>

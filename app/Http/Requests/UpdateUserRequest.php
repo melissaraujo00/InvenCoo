@@ -25,13 +25,15 @@ class UpdateUserRequest extends FormRequest
         $userId = $this->route('user')->id;
 
         return [
-            'name'      => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email'     => ['required', 'email', Rule::unique('users')->ignore($userId)],
-            'number'    => 'required|string|max:20',
+              'name' => 'required',
+            'last_name' => 'required',
+            'email' => 'required|email|unique:users,email,' . $this->user->id,
+            'number' => 'required',
             'office_id' => 'required|exists:offices,id',
-            'status'    => 'required|boolean', 
-            'password'  => 'nullable|string|min:8|confirmed',
+            'password' => 'nullable|min:8|confirmed',
+            'status' => 'nullable|boolean',
+            'roles' => 'sometimes|array',
+            'roles.*' => 'exists:roles,id'
         ];
     }
 }

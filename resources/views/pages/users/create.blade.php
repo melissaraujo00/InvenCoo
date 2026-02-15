@@ -101,40 +101,70 @@
                     </div>
                 </div>
 
-                {{-- Separador para sección de contraseña --}}
+                {{-- Separador --}}
                 <hr class="border-gray-200 dark:border-gray-700 my-6">
 
-                {{-- Título de sección de seguridad --}}
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
-                    Seguridad
-                </h3>
+                {{-- Sección de Roles --}}
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+                        Roles y Permisos
+                    </h3>
 
-                {{-- Campos de contraseña en grid --}}
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {{-- Contraseña (el componente password ya incluye su propio label) --}}
-                    <x-form.password
-                        name="password"
-                        label="Contraseña"
-                        placeholder="Mínimo 8 caracteres"
-                        :required="true"
-                    />
-
-                    {{-- Confirmación (usamos input normal porque es solo confirmación) --}}
-                    <x-form.group name="password_confirmation" label="Confirmar Contraseña" :required="true">
-                        <x-form.input
-                            type="password"
-                            name="password_confirmation"
-                            placeholder="Repite la contraseña"
-                            :required="true"
-                        />
-                    </x-form.group>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @foreach($roles as $role)
+                            <div class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                <input type="checkbox"
+                                    name="roles[]"
+                                    value="{{ $role->id }}"  {{-- Seguimos enviando el ID --}}
+                                    id="role_{{ $role->id }}"
+                                    class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-700"
+                                    {{ in_array($role->id, old('roles', [])) ? 'checked' : '' }}>
+                                <label for="role_{{ $role->id }}" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {{ $role->name }}
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+                    @error('roles')
+                        <p class="text-theme-xs text-error-500 mt-2">{{ $message }}</p>
+                    @enderror
                 </div>
 
-                {{-- Barra de fortaleza de contraseña --}}
-                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                        <span class="font-semibold">Requisitos de seguridad:</span> La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y caracteres especiales para máxima seguridad.
-                    </p>
+                {{-- Separador --}}
+                <hr class="border-gray-200 dark:border-gray-700 my-6">
+
+                {{-- Sección de Contraseña --}}
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+                        Seguridad
+                    </h3>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {{-- Contraseña --}}
+                        <x-form.password
+                            name="password"
+                            label="Contraseña"
+                            placeholder="Mínimo 8 caracteres"
+                            :required="true"
+                        />
+
+                        {{-- Confirmación --}}
+                        <x-form.group name="password_confirmation" label="Confirmar Contraseña" :required="true">
+                            <x-form.input
+                                type="password"
+                                name="password_confirmation"
+                                placeholder="Repite la contraseña"
+                                :required="true"
+                            />
+                        </x-form.group>
+                    </div>
+
+                    {{-- Barra de fortaleza de contraseña --}}
+                    <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            <span class="font-semibold">Requisitos de seguridad:</span> La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y caracteres especiales para máxima seguridad.
+                        </p>
+                    </div>
                 </div>
             </div>
         </x-common.component-card>

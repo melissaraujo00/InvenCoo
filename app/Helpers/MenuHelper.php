@@ -19,8 +19,7 @@ class MenuHelper
                 'name' => 'Acceso',
                 'subItems' => [
                     ['name' => 'Usuarios', 'path' => '/users'],
-                    ['name' => 'Roles', 'path' => '/roles'],
-                    ['name' => 'Permisos', 'path' => '/permisson']
+                    ['name' => 'Roles y Permisos', 'path' => '/roles'],
                 ]
 
             ],

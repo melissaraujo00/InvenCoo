@@ -1,66 +1,73 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\office;
+
+use App\Models\User;
+use App\Models\Office;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+use App\Services\User\UserService;
+use App\Services\User\DTOs\UserData;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-    public function index(Request $request)
-    {
+    public function __construct(
+        private readonly UserService $userService
+    ) {}
 
-        $users = User::with([ 'office'])
-            ->when($request->filled('search'), fn($query) =>
-                $query->whereAny(['name', 'last_name', 'email', 'number'], 'LIKE', "%{$request->search}%")
-            )
-            ->paginate(10)
-            ->withQueryString();
+    public function index()
+    {
+        $users = $this->userService->getUsersList(request('search'));
 
         return view('pages.users.index', compact('users'));
     }
 
     public function create()
     {
-        $offices = office::all();
-        return view('pages.users.create', compact('offices'));
+        $offices = Office::all();
+        $roles = Role::all();
+
+        return view('pages.users.create', compact('offices', 'roles'));
     }
 
-    public function store(StoreUserRequest $request){
-        $data = $request->validated();
-        $data['status'] = true;
-        User::create($data);
-        return redirect()->route('users.index')->with('success', 'Usuario creado exitosamente.');
+    public function store(StoreUserRequest $request)
+    {
+        $userData = UserData::fromRequest($request->validated());
+
+        $this->userService->createUser($userData);
+
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'Usuario creado exitosamente.');
     }
 
     public function edit(User $user)
     {
-        // Necesitamos las oficinas para llenar el <select> nuevamente
-        $offices = office::all();
+        $offices = Office::all();
+        $roles = Role::all();
+        $userRoleIds = $user->roles->pluck('id')->toArray();
 
-        return view('pages.users.edit', compact('user', 'offices'));
+        return view('pages.users.edit', compact('user', 'offices', 'roles', 'userRoleIds'));
     }
 
-    /**
-     * Actualiza el usuario en la base de datos
-     */
     public function update(UpdateUserRequest $request, User $user)
     {
+        $userData = UserData::fromRequest($request->validated());
 
-        $data = $request->validated();
+        $this->userService->updateUser($user, $userData);
 
-        if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
-        } else {
-            unset($data['password']);
-        }
-
-        $user->update($data);
-
-        return redirect()->route('users.index')
+        return redirect()
+            ->route('users.index')
             ->with('success', 'Usuario actualizado correctamente.');
+    }
+
+    public function destroy(User $user)
+    {
+        $this->userService->deleteUser($user);
+
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'Usuario eliminado correctamente.');
     }
 }

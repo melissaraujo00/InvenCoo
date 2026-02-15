@@ -20,4 +20,5 @@ class office extends Model
     {
         return $this->hasMany(User::class, 'office_id');
     }
+    
 }

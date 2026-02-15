@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\CategoryController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use Inertia\Inertia;
@@ -21,67 +22,69 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('users', UserController::class);
 
-// form pages
-Route::get('/form-elements', function () {
-    return view('pages.form.form-elements', ['title' => 'Form Elements']);
-})->name('form-elements');
+    Route::resource('categories', CategoryController::class);
 
-// tables pages
-Route::get('/basic-tables', function () {
-    return view('pages.tables.basic-tables', ['title' => 'Basic Tables']);
-})->name('basic-tables');
+    // form pages
+    Route::get('/form-elements', function () {
+        return view('pages.form.form-elements', ['title' => 'Form Elements']);
+    })->name('form-elements');
 
-// pages
+    // tables pages
+    Route::get('/basic-tables', function () {
+        return view('pages.tables.basic-tables', ['title' => 'Basic Tables']);
+    })->name('basic-tables');
 
-Route::get('/blank', function () {
-    return view('pages.blank', ['title' => 'Blank']);
-})->name('blank');
+    // pages
 
-// error pages
-Route::get('/error-404', function () {
-    return view('pages.errors.error-404', ['title' => 'Error 404']);
-})->name('error-404');
+    Route::get('/blank', function () {
+        return view('pages.blank', ['title' => 'Blank']);
+    })->name('blank');
 
-// chart pages
-Route::get('/line-chart', function () {
-    return view('pages.chart.line-chart', ['title' => 'Line Chart']);
-})->name('line-chart');
+    // error pages
+    Route::get('/error-404', function () {
+        return view('pages.errors.error-404', ['title' => 'Error 404']);
+    })->name('error-404');
 
-Route::get('/bar-chart', function () {
-    return view('pages.chart.bar-chart', ['title' => 'Bar Chart']);
-})->name('bar-chart');
+    // chart pages
+    Route::get('/line-chart', function () {
+        return view('pages.chart.line-chart', ['title' => 'Line Chart']);
+    })->name('line-chart');
 
-
-// authentication pages
-Route::get('/signin', function () {
-    return view('pages.auth.signin', ['title' => 'Sign In']);
-})->name('signin');
+    Route::get('/bar-chart', function () {
+        return view('pages.chart.bar-chart', ['title' => 'Bar Chart']);
+    })->name('bar-chart');
 
 
-// ui elements pages
-Route::get('/alerts', function () {
-    return view('pages.ui-elements.alerts', ['title' => 'Alerts']);
-})->name('alerts');
+    // authentication pages
+    Route::get('/signin', function () {
+        return view('pages.auth.signin', ['title' => 'Sign In']);
+    })->name('signin');
 
-Route::get('/avatars', function () {
-    return view('pages.ui-elements.avatars', ['title' => 'Avatars']);
-})->name('avatars');
 
-Route::get('/badge', function () {
-    return view('pages.ui-elements.badges', ['title' => 'Badges']);
-})->name('badges');
+    // ui elements pages
+    Route::get('/alerts', function () {
+        return view('pages.ui-elements.alerts', ['title' => 'Alerts']);
+    })->name('alerts');
 
-Route::get('/buttons', function () {
-    return view('pages.ui-elements.buttons', ['title' => 'Buttons']);
-})->name('buttons');
+    Route::get('/avatars', function () {
+        return view('pages.ui-elements.avatars', ['title' => 'Avatars']);
+    })->name('avatars');
 
-Route::get('/image', function () {
-    return view('pages.ui-elements.images', ['title' => 'Images']);
-})->name('images');
+    Route::get('/badge', function () {
+        return view('pages.ui-elements.badges', ['title' => 'Badges']);
+    })->name('badges');
 
-Route::get('/videos', function () {
-    return view('pages.ui-elements.videos', ['title' => 'Videos']);
-})->name('videos');
+    Route::get('/buttons', function () {
+        return view('pages.ui-elements.buttons', ['title' => 'Buttons']);
+    })->name('buttons');
+
+    Route::get('/image', function () {
+        return view('pages.ui-elements.images', ['title' => 'Images']);
+    })->name('images');
+
+    Route::get('/videos', function () {
+        return view('pages.ui-elements.videos', ['title' => 'Videos']);
+    })->name('videos');
 
     // ... traslada aquí el resto de tus rutas (form-elements, tables, etc.)
 });
@@ -93,23 +96,4 @@ Route::get('/videos', function () {
 
 
 
-require __DIR__.'/auth.php';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+require __DIR__ . '/auth.php';

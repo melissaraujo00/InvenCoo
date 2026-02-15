@@ -130,14 +130,14 @@
                     </h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                       @foreach($roles as $role)
+                        @foreach($roles as $role)
                             <div class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <input type="checkbox"
-                                    name="roles[]"
-                                    value="{{ $role->id }}"
-                                    id="role_{{ $role->id }}"
-                                    class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-700"
-                                    {{ in_array($role->id, old('roles', $userRoleIds)) ? 'checked' : '' }}>
+                                       name="roles[]"
+                                       value="{{ $role->id }}"
+                                       id="role_{{ $role->id }}"
+                                       class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-700"
+                                       {{ in_array($role->id, old('roles', $userRoles)) ? 'checked' : '' }}>
                                 <label for="role_{{ $role->id }}" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     {{ $role->name }}
                                 </label>

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 
-class office extends Model
+class Office extends Model
 {
     use HasFactory;
     protected $fillable =
@@ -20,5 +20,4 @@ class office extends Model
     {
         return $this->hasMany(User::class, 'office_id');
     }
-    
 }

@@ -1,9 +1,10 @@
 <?php
 
+use App\Models\Office;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Models\office;
+
 return new class extends Migration
 {
     /**
@@ -21,7 +22,7 @@ return new class extends Migration
             $table->string('password');
             $table->boolean('status')->default(true);
             $table->rememberToken();
-            $table->foreignIdFor(office::class)->constrained();
+            $table->foreignIdFor(Office::class)->constrained();
             $table->timestamps();
         });
 

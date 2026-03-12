@@ -2,63 +2,70 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Show the user's profile settings page.
      */
-    public function index()
+    public function edit(Request $request)
     {
-        //
+        $user = $request->user(); // Esta es la forma correcta de obtener el usuario
+
+        return view('pages.profile', [
+            'user' => $user,
+            'mustVerifyEmail' => $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail,
+            'status' => session('status'),
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Update the user's profile settings.
      */
-    public function create()
+    public function update(Request $request)
     {
-        //
-    }
+        $user = $request->user(); // Obtener usuario de la request
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        $validated = $request->validate([
+            'name' => 'required|string|max:50',
+            'last_name' => 'required|string|max:50',
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('users')->ignore($user->id)
+            ],
+            'number' => [
+                'required',
+                'string',
+                'max:12',
+                Rule::unique('users')->ignore($user->id)
+            ],
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        $user->fill([
+            'name' => $validated['name'],
+            'last_name' => $validated['last_name'],
+            'email' => $validated['email'],
+            'number' => $validated['number'],
+        ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+        // Si el email cambió, resetear verificación
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
+        // Actualizar contraseña si se proporcionó
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        $user->save();
+
+        return redirect()->route('profile.edit')->with('status', 'Perfil actualizado correctamente.');
     }
 }

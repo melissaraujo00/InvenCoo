@@ -24,9 +24,9 @@ Route::middleware(['auth'])->group(function () {
     })->name('calendar');
 
     // profile pages
-Route::get('/profile', function () {
-    return view('pages.profile', ['title' => 'Profile']);
-})->name('profile');
+ Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
 
     Route::resource('users', UserController::class);
     Route::resource('roles', RoleController::class);

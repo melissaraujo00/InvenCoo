@@ -80,20 +80,8 @@
                         </div>
                     </div>
 
-                    {{-- Tercera fila: Oficina y Stock --}}
+                    {{-- Tercera fila: Stock y Stock Mínimo --}}
                     <div class="flex flex-col md:flex-row gap-4 mb-4">
-                        <div class="w-full md:w-1/2 space-y-4">
-                            <x-form.group name="office_id" label="Oficina" :required="true">
-                                <select name="office_id" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                                    <option value="">Seleccione una oficina</option>
-                                    @foreach($offices as $office)
-                                        <option value="{{ $office->id }}" {{ old('office_id') == $office->id ? 'selected' : '' }}>
-                                            {{ $office->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </x-form.group>
-                        </div>
                         <div class="w-full md:w-1/2 space-y-4">
                             <x-form.group name="stock" label="Stock" :required="true">
                                 <x-form.input
@@ -104,10 +92,7 @@
                                     :value="old('stock')" />
                             </x-form.group>
                         </div>
-                    </div>
 
-                    {{-- Cuarta fila: Stock Mínimo --}}
-                    <div class="flex flex-col md:flex-row gap-4">
                         <div class="w-full md:w-1/2 space-y-4">
                             <x-form.group name="stock_minimun" label="Stock Mínimo" :required="true">
                                 <x-form.input
@@ -118,8 +103,19 @@
                                     :value="old('stock_minimun')" />
                             </x-form.group>
                         </div>
+                    </div>
+
+                    {{-- Cuarta fila: Unidad --}}
+                    <div class="flex flex-col md:flex-row gap-4">
                         <div class="w-full md:w-1/2 space-y-4">
-                            {{-- Espacio vacío para mantener simetría --}}
+                            <x-form.group name="unit" label="Unidad" :required="true">
+                                <x-form.input
+                                    type="text"
+                                    name="unit"
+                                    placeholder="Caja"
+                                    :required="true"
+                                    :value="old('unit')" />
+                            </x-form.group>
                         </div>
                     </div>
                 </div>
@@ -129,69 +125,44 @@
             <x-common.component-card title="Proveedores" class="mt-6">
                 <div class="p-4">
                     <div class="space-y-4" id="suppliers-container">
-                        @php $oldSuppliers = old('suppliers', []); @endphp
+                        @php
+                            // Si hay valores viejos (por error de validación) los usamos, si no, una fila vacía
+                            $suppliersList = old('suppliers', [['id' => '', 'price' => '']]);
+                        @endphp
 
-                        @if(empty($oldSuppliers))
-                            {{-- Fila de proveedor inicial --}}
-                            <div class="flex flex-col md:flex-row gap-4">
+                        @foreach($suppliersList as $index => $supplier)
+                            <div class="supplier-row flex flex-col md:flex-row gap-4">
                                 <div class="w-full md:w-1/2">
-                                    <x-form.group name="suppliers[0][id]" label="Proveedor">
-                                        <select name="suppliers[0][id]" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                                    <x-form.group name="suppliers[{{ $index }}][id]" label="Proveedor">
+                                        <select name="suppliers[{{ $index }}][id]" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                                             <option value="">Seleccione un proveedor</option>
-                                            @foreach($suppliers as $supplier)
-                                                <option value="{{ $supplier->id }}">
-                                                    {{ $supplier->company_name }}
+                                            @foreach($suppliers as $supplierItem)
+                                                <option value="{{ $supplierItem->id }}" {{ $supplier['id'] == $supplierItem->id ? 'selected' : '' }}>
+                                                    {{ $supplierItem->company_name }}
                                                 </option>
                                             @endforeach
                                         </select>
                                     </x-form.group>
                                 </div>
                                 <div class="w-full md:w-1/2">
-                                    <x-form.group name="suppliers[0][price]" label="Precio">
+                                    <x-form.group name="suppliers[{{ $index }}][price]" label="Precio">
                                         <x-form.input
                                             type="number"
                                             step="0.01"
-                                            name="suppliers[0][price]"
+                                            name="suppliers[{{ $index }}][price]"
                                             placeholder="0.00"
-                                            :value="old('suppliers.0.price')" />
+                                            :value="old('suppliers.' . $index . '.price')" />
                                     </x-form.group>
                                 </div>
                             </div>
-                        @else
-                            @foreach($oldSuppliers as $index => $supplier)
-                                <div class="flex flex-col md:flex-row gap-4">
-                                    <div class="w-full md:w-1/2">
-                                        <x-form.group name="suppliers[{{ $index }}][id]" label="Proveedor">
-                                            <select name="suppliers[{{ $index }}][id]" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                                                <option value="">Seleccione un proveedor</option>
-                                                @foreach($suppliers as $supplierItem)
-                                                    <option value="{{ $supplierItem->id }}" {{ $supplier['id'] == $supplierItem->id ? 'selected' : '' }}>
-                                                        {{ $supplierItem->company_name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </x-form.group>
-                                    </div>
-                                    <div class="w-full md:w-1/2">
-                                        <x-form.group name="suppliers[{{ $index }}][price]" label="Precio">
-                                            <x-form.input
-                                                type="number"
-                                                step="0.01"
-                                                name="suppliers[{{ $index }}][price]"
-                                                placeholder="0.00"
-                                                :value="old('suppliers.' . $index . '.price')" />
-                                        </x-form.group>
-                                    </div>
-                                </div>
-                            @endforeach
-                        @endif
+                        @endforeach
                     </div>
 
                     {{-- Botón para agregar más proveedores --}}
                     <div class="mt-4">
-                        <button type="button" id="add-supplier"
-                            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 transition-colors">
-                            <svg class="fill-current" width="18" height="18" viewBox="0 0 20 20">
+                        <button type="button" id="add-supplier-row"
+                            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 transition-colors">
+                            <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20">
                                 <path d="M10.8333 5V9.16667H15V10.8333H10.8333V15H9.16667V10.8333H5V9.16667H9.16667V5H10.8333Z" />
                             </svg>
                             Agregar otro proveedor
@@ -223,33 +194,44 @@
 
 @push('scripts')
 <script>
-    document.getElementById('add-supplier').addEventListener('click', function() {
+    document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('suppliers-container');
-        const index = container.children.length;
+        const addButton = document.getElementById('add-supplier-row');
 
-        const div = document.createElement('div');
-        div.className = 'flex flex-col md:flex-row gap-4 mt-4';
-        div.innerHTML = `
-            <div class="w-full md:w-1/2">
-                <div class="mb-4">
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Proveedor</label>
-                    <select name="suppliers[${index}][id]" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                        <option value="">Seleccione un proveedor</option>
-                        @foreach($suppliers as $supplier)
-                            <option value="{{ $supplier->id }}">{{ $supplier->company_name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-            <div class="w-full md:w-1/2">
-                <div class="mb-4">
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Precio</label>
-                    <input type="number" step="0.01" name="suppliers[${index}][price]" placeholder="0.00" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-                </div>
-            </div>
-        `;
+        if (!container || !addButton) return;
 
-        container.appendChild(div);
+        addButton.addEventListener('click', function() {
+            const rows = container.querySelectorAll('.supplier-row');
+            const newIndex = rows.length; // el nuevo índice es la cantidad de filas actual
+
+            // Clonar la primera fila (siempre existe al menos una)
+            const firstRow = rows[0];
+            const newRow = firstRow.cloneNode(true);
+
+            // Actualizar los atributos name de los campos dentro de la nueva fila
+            newRow.querySelectorAll('select, input').forEach(function(element) {
+                const name = element.getAttribute('name');
+                if (name) {
+                    // Reemplazar el índice entre corchetes, ej: suppliers[0][id] -> suppliers[1][id]
+                    const newName = name.replace(/\[\d+\]/, '[' + newIndex + ']');
+                    element.setAttribute('name', newName);
+
+                    // Limpiar el valor seleccionado/ingresado
+                    if (element.tagName === 'SELECT') {
+                        element.value = '';
+                    } else if (element.tagName === 'INPUT') {
+                        element.value = '';
+                    }
+
+                    // Eliminar cualquier atributo selected/checked residual
+                    element.removeAttribute('selected');
+                    element.removeAttribute('checked');
+                }
+            });
+
+            // Agregar la nueva fila al contenedor
+            container.appendChild(newRow);
+        });
     });
 </script>
 @endpush

@@ -24,7 +24,7 @@
         {{-- Tabla de Productos --}}
         <x-tables.table
             title="Listado de Productos"
-            :headers="['Código', 'Nombre', 'Categoría', 'Marca', 'Stock', 'Stock Mínimo', 'Oficina', 'Proveedores']"
+            :headers="['Código', 'Nombre', 'Categoría', 'Marca', 'Stock', 'Unidad','Oficina', 'Proveedores']"
             :paginator="$products"
             :searchable="true"
             emptyMessage="No hay productos registrados">
@@ -72,10 +72,10 @@
                         @endif
                     </td>
 
-                    {{-- Stock Mínimo --}}
+                    {{-- Unidad Mínimo --}}
                     <td class="px-4 py-4 whitespace-nowrap">
                         <span class="text-sm text-gray-700 dark:text-gray-300">
-                            {{ $product->stock_minimun }}
+                            {{ $product->unit }}
                         </span>
                     </td>
 
@@ -105,13 +105,6 @@
                     {{-- Acciones --}}
                     <td class="px-4 py-4 whitespace-nowrap">
                         <div class="flex justify-end gap-3 text-gray-500 dark:text-gray-400">
-                            {{-- Botón Ver --}}
-                            <a href="{{ route('products.show', $product->id) }}"
-                                class="hover:text-blue-500 transition-colors" title="Ver detalles">
-                                <svg class="fill-current" width="20" height="20" viewBox="0 0 24 24">
-                                    <path d="M15 12c0 1.654-1.346 3-3 3s-3-1.346-3-3 1.346-3 3-3 3 1.346 3 3zm9.449-1.049c-2.357-4.603-6.837-7.451-11.449-7.451s-9.092 2.848-11.449 7.451c-.205.4-.205.866 0 1.266 2.357 4.603 6.837 7.451 11.449 7.451s9.092-2.848 11.449-7.451c.205-.4.205-.866 0-1.266zm-1.066.633c-2.039 3.982-5.914 6.416-10.383 6.416s-8.344-2.434-10.383-6.416c-.078-.152-.078-.332 0-.484 2.039-3.982 5.914-6.416 10.383-6.416s8.344 2.434 10.383 6.416c.078.152.078.332 0 .484z"/>
-                                </svg>
-                            </a>
 
                             {{-- Botón Editar --}}
                             <a href="{{ route('products.edit', $product->id) }}"

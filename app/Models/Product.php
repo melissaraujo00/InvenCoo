@@ -15,7 +15,8 @@ class Product extends Model
         'brand_id',
         'office_id',
         'stock',
-        'stock_minimun'
+        'stock_minimun',
+        'unit'
     ];
 
     public function suppliers(): BelongsToMany
@@ -30,6 +31,10 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function office():BelongsTo{
+        return $this->belongsTo(Office::class);
     }
 
     /**

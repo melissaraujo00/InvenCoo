@@ -14,7 +14,7 @@ class ProfileController extends Controller
      */
     public function edit(Request $request)
     {
-        $user = $request->user(); // Esta es la forma correcta de obtener el usuario
+        $user = $request->user();
 
         return view('pages.profile', [
             'user' => $user,
@@ -28,7 +28,7 @@ class ProfileController extends Controller
      */
     public function update(Request $request)
     {
-        $user = $request->user(); // Obtener usuario de la request
+        $user = $request->user(); 
 
         $validated = $request->validate([
             'name' => 'required|string|max:50',

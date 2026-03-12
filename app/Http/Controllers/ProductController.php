@@ -7,8 +7,8 @@ use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Category;
-use App\Models\Brand;
 use App\Models\Office;
+use App\Models\Brand;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -30,15 +30,20 @@ class ProductController extends Controller
         $suppliers = Supplier::all();
         $categories = Category::all();
         $brands = Brand::all();
-        $offices = Office::all();
 
-        return view('pages.products.create', compact('suppliers', 'categories', 'brands', 'offices'));
+        return view('pages.products.create', compact('suppliers', 'categories', 'brands'));
     }
 
     public function store(StoreProductRequest $request)
     {
+        // Obtener datos validados
+        $validated = $request->validated();
+
+        // Asignar la oficina del usuario autenticado
+        $validated['office_id'] = $request->user()->office_id;
+
         // Crear el producto
-        $product = Product::create($request->safe()->except(['suppliers']));
+        $product = Product::create($validated);
 
         // Asociar proveedores con sus precios
         if ($request->has('suppliers') && !empty($request->suppliers)) {
@@ -49,14 +54,12 @@ class ProductController extends Controller
             $product->suppliers()->attach($suppliersData);
         }
 
-        return to_route('products.index')
-            ->with('success', 'Producto creado exitosamente.');
+        return to_route('products.index')->with('success', 'Producto creado exitosamente.');
     }
 
     public function show(Product $product)
     {
         $product->load(['category', 'brand', 'office', 'suppliers']);
-
         return view('pages.products.show', compact('product'));
     }
 
@@ -65,18 +68,21 @@ class ProductController extends Controller
         $suppliers = Supplier::all();
         $categories = Category::all();
         $brands = Brand::all();
-        $offices = Office::all();
-
-        // Cargar proveedores con sus precios
         $product->load('suppliers');
 
-        return view('pages.products.edit', compact('product', 'suppliers', 'categories', 'brands', 'offices'));
+        return view('pages.products.edit', compact('product', 'suppliers', 'categories', 'brands'));
     }
 
     public function update(UpdateProductRequest $request, Product $product)
     {
+        // Obtener datos validados
+        $validated = $request->validated();
+
+        // Asegurar que la oficina sea la del usuario (por si acaso)
+        $validated['office_id'] = $request->user()->office_id;
+
         // Actualizar producto
-        $product->update($request->safe()->except(['suppliers']));
+        $product->update($validated);
 
         // Sincronizar proveedores
         if ($request->has('suppliers')) {
@@ -95,7 +101,6 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        // Eliminar relaciones primero
         $product->suppliers()->detach();
         $product->delete();
 

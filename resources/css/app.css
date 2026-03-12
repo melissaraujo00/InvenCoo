@@ -880,3 +880,42 @@ pre[class*='language-'] {
     margin-right: -60px !important;
   }
 }
+@media (max-width: 640px) {
+    /* Contenedor: permitir scroll solo si es necesario (pero con texto ajustado) */
+    .overflow-x-auto.max-w-full {
+        overflow-x: auto; /* Cambia a 'hidden' si no quieres scroll */
+    }
+
+    /* Quitar table-layout fixed para que las columnas se ajusten al contenido */
+    table {
+        table-layout: auto !important;
+        width: 100% !important;
+    }
+
+    /* Reducir padding y permitir que el texto se divida en varias líneas */
+    th, td {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+
+    /* Asegurar que la columna de acciones (última) se muestre siempre */
+    th:last-child, td:last-child {
+        display: table-cell !important;
+    }
+    /* Ocultar columnas de datos de la 4 a la 9 (Marca, Stock, Stock Mínimo, Unidad, Oficina, Proveedores) */
+    th:nth-child(n+4):nth-child(-n+9),
+    td:nth-child(n+4):nth-child(-n+9) {
+        display: none !important;
+    }
+
+    
+
+    /* Distribuir mejor el ancho de las columnas visibles (ajusta porcentajes según prefieras) */
+    th:nth-child(1), td:nth-child(1) { width: 15%; } /* Código */
+    th:nth-child(2), td:nth-child(2) { width: 40%; } /* Nombre (más espacio) */
+    th:nth-child(3), td:nth-child(3) { width: 25%; } /* Categoría */
+    th:last-child, td:last-child { width: 20%; } /* Acciones */
+}

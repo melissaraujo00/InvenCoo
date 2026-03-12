@@ -70,22 +70,6 @@ class SidebarController extends Controller
                         ],
                     ],
                     [
-                        'icon' => 'list-icon',
-                        'name' => 'Forms',
-                        'subItems' => [
-                            ['name' => 'Form Elements', 'path' => '/form-elements', 'pro' => false],
-                            ['name' => 'Form Layout', 'path' => '/form-layout', 'pro' => false],
-                        ],
-                    ],
-                    [
-                        'icon' => 'table-icon',
-                        'name' => 'Tables',
-                        'subItems' => [
-                            ['name' => 'Basic Tables', 'path' => '/basic-tables', 'pro' => false],
-                            ['name' => 'Data Tables', 'path' => '/data-tables', 'pro' => false],
-                        ],
-                    ],
-                    [
                         'icon' => 'page-icon',
                         'name' => 'Pages',
                         'subItems' => [

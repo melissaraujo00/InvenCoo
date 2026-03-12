@@ -19,9 +19,11 @@ class DatabaseSeeder extends Seeder
         $offices = office::factory(10)->create();
         $this->call([
             RoleSeeder::class,
+            UserSeeder::class,
         ]);
 
-       $user = User::factory()->create([
+
+        $adminUser =User::factory()->create([
             'name'=>'admin',
             'last_name'=> 'Admin',
             'email'=> 'admin@admin.com',
@@ -31,7 +33,8 @@ class DatabaseSeeder extends Seeder
             'office_id' => $offices->random()->id
         ]);
 
-        $user->assignRole('Administrador');
+        $adminUser->assignRole('Administrador');
+
 
     }
 }

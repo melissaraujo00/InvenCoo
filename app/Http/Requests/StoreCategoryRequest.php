@@ -25,12 +25,16 @@ class StoreCategoryRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'max:100'
+                'max:50',
+                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
+                'unique:categories',
+                'min:5'
             ],
             'description' => [
                 'nullable',
                 'string',
-                'max:500'
+                'max:255',
+                'min:5'
             ]
         ];
     }
@@ -40,6 +44,18 @@ class StoreCategoryRequest extends FormRequest
         return [
             'name' => 'categoría',
             'description' => 'descripción'
+        ];
+    }
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'La categoria es obligatoria',
+            'name.max' => 'La categoria debe de ser maximo 50 caracteres',
+            'name.regex' => 'La categoria no debe de tener numeros',
+            'name.unique'=> 'El nombre de la categoria ya esta en uso',
+            'name.min' => 'El minimo de caracter son 5',
+
+            'description.max' => 'La descripcion debe de tenero un maximo de 255 caracteres'
         ];
     }
 }

@@ -16,8 +16,13 @@ class Office extends Model
         'descripcion'
     ];
 
-    public function users()
+    public function users(): HasMany
     {
         return $this->hasMany(User::class, 'office_id');
+    }
+
+    public function products():HasMany
+    {
+        return $this->hasMany(Product::class);
     }
 }

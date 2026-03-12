@@ -1,0 +1,86 @@
+@extends('layouts.app')
+
+@section('content')
+<x-common.page-breadcrumb pageTitle="Usuarios Inactivos" />
+
+<div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h2 class="text-title-md2 font-bold text-gray-800 dark:text-white/90">
+                Usuarios Inactivos
+            </h2>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Usuarios desactivados que pueden ser restaurados
+            </p>
+        </div>
+
+        <div class="flex gap-3">
+            <a href="{{ route('users.index') }}"
+               class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 transition-colors">
+                <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20">
+                    <path d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Usuarios Activos
+            </a>
+        </div>
+    </div>
+
+    <x-tables.table
+        title="Lista de Usuarios Inactivos"
+        :headers="['Usuario', 'Correo', 'Roles', 'Oficina', 'Fecha Desactivación']"
+        :paginator="$users"
+        :searchable="true"
+        emptyMessage="No hay usuarios inactivos"
+    >
+        @foreach($users as $user)
+        <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
+            <td class="px-4 py-4 whitespace-nowrap">
+                <x-tables.initials-avatar
+                    :name="$user->name"
+                    :lastName="$user->last_name"
+                    :id="$user->id"
+                />
+            </td>
+
+            <td class="px-4 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900 dark:text-white">{{ $user->email }}</div>
+            </td>
+
+            <td class="px-4 py-4 whitespace-nowrap">
+                <div class="flex flex-wrap gap-1">
+                    @forelse($user->roles as $role)
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400">
+                            {{ $role->name }}
+                        </span>
+                    @empty
+                        <span class="text-xs text-gray-400 dark:text-gray-500">Sin rol</span>
+                    @endforelse
+                </div>
+            </td>
+
+            <td class="px-4 py-4 whitespace-nowrap">
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                    {{ $user->office->name ?? 'Sin oficina' }}
+                </span>
+            </td>
+
+            <td class="px-4 py-4 whitespace-nowrap">
+                <span class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ $user->deleted_at->format('d/m/Y H:i') }}
+                </span>
+            </td>
+
+            <td class="px-4 py-4 whitespace-nowrap">
+                <x-tables.actions
+                    :id="$user->id"
+                    :showEdit="false"
+                    :showDelete="false"
+                    :showActivate="true"
+                    activateRoute="users.activate"
+                />
+            </td>
+        </tr>
+        @endforeach
+    </x-tables.table>
+</div>
+@endsection

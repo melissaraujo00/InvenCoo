@@ -27,22 +27,20 @@ class UserController extends Controller
     public function create()
     {
         $offices = Office::all();
-        $roles = Role::all(); // <- ESTABA FALTANDO ESTA LÍNEA
+        $roles = Role::all();
 
-        return view('pages.users.create', compact('offices', 'roles')); // <- AGREGAR 'roles' AL COMPACT
+        return view('pages.users.create', compact('offices', 'roles'));
     }
 
     public function store(StoreUserRequest $request)
     {
         $data = $request->validated();
-
-        // Hash de la contraseña
         $data['password'] = Hash::make($data['password']);
 
         $user = User::create($data);
-
-        if ($request->has('roles')) {
-            $user->syncRoles($request->roles);
+        if ($request->has('roles') && !empty($request->roles)) {
+            $roleNames = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
+            $user->syncRoles($roleNames);
         }
 
         return redirect()->route('users.index')->with('success', 'Usuario creado exitosamente.');
@@ -69,13 +67,21 @@ class UserController extends Controller
 
         $user->update($data);
 
-        if ($request->has('roles')) {
-            $user->syncRoles($request->roles);
+        if ($request->has('roles') && !empty($request->roles)) {
+            $roleNames = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
+            $user->syncRoles($roleNames);
         } else {
             $user->syncRoles([]);
         }
 
         return redirect()->route('users.index')
             ->with('success', 'Usuario actualizado correctamente.');
+    }
+
+    public function destroy(User $user)
+    {
+        $user->delete();
+        return redirect()->route('users.index')
+            ->with('success', 'Usuario eliminado correctamente.');
     }
 }

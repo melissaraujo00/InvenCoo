@@ -3,9 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class UpdateCategoryRequest extends FormRequest
+class StoreBrandRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,10 +25,10 @@ class UpdateCategoryRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
+                'min:5',
                 'max:50',
                 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
-                Rule::unique('categories')->ignore($this->route('category')),
-                'min:5'
+                'unique:brands'
             ],
             'description' => [
                 'nullable',
@@ -43,21 +42,21 @@ class UpdateCategoryRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'name' => 'categoría',
+            'name' => 'Marca',
             'description' => 'descripción'
         ];
     }
-
     public function messages(): array
     {
         return [
-            'name.required' => 'La categoria es obligatoria',
-            'name.max' => 'La categoria debe de ser maximo 50 caracteres',
-            'name.regex' => 'La categoria no debe de tener numeros',
-            'name.unique'=> 'El nombre de la categoria ya esta en uso',
+            'name.required' => 'La marca es obligatoria',
+            'name.max' => 'La marca debe de ser maximo 50 caracteres',
+            'name.regex' => 'La marca no debe de tener numeros',
+            'name.unique'=> 'El nombre de la marca ya esta en uso',
             'name.min' => 'El minimo de caracter son 5',
 
-            'description.max' => 'La descripcion debe de tenero un maximo de 255 caracteres'
+            'description.max' => 'La descripcion debe de tenero un maximo de 255 caracteres',
+            'description.min' => 'El minimo de caracteres son de 5'
         ];
     }
 }

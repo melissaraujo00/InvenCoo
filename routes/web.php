@@ -1,11 +1,16 @@
 <?php
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\BrandController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use Inertia\Inertia;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SupplierController;
 
 // Rutas protegidas (Solo para usuarios logueados)
 Route::middleware(['auth'])->group(function () {
@@ -18,21 +23,19 @@ Route::middleware(['auth'])->group(function () {
         return view('pages.calender', ['title' => 'Calendar']);
     })->name('calendar');
 
-    Route::resource('/profile', ProfileController::class);
+    // profile pages
+Route::get('/profile', function () {
+    return view('pages.profile', ['title' => 'Profile']);
+})->name('profile');
 
     Route::resource('users', UserController::class);
+    Route::resource('roles', RoleController::class);
+    Route::resource('brands', BrandController::class);
+
 
     Route::resource('categories', CategoryController::class);
-
-    // form pages
-    Route::get('/form-elements', function () {
-        return view('pages.form.form-elements', ['title' => 'Form Elements']);
-    })->name('form-elements');
-
-    // tables pages
-    Route::get('/basic-tables', function () {
-        return view('pages.tables.basic-tables', ['title' => 'Basic Tables']);
-    })->name('basic-tables');
+    Route::resource('suppliers', SupplierController::class);
+    Route::resource('products', ProductController::class);
 
     // pages
 

@@ -6,15 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use App\Models\Category;
+use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::select('id', 'name', 'description')->paginate(20);
+        $categories = Category::select('id', 'name', 'description')
+                    ->when($request->filled('search'), fn($query) =>
+                    $query->where('name', 'LIKE', "%{$request->search}%")
+                    )
+                    ->paginate(20);
 
         return view('admin.categories.index', compact('categories'));
     }

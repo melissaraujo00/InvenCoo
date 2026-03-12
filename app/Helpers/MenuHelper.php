@@ -2,11 +2,14 @@
 
 namespace App\Helpers;
 
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Collection;
+
 class MenuHelper
 {
     public static function getMainNavItems()
     {
-        return [
+        return self::filterMenu([
             [
                 'icon' => 'dashboard',
                 'name' => 'Dashboard',
@@ -18,20 +21,18 @@ class MenuHelper
                 'icon' => 'user-group',
                 'name' => 'Acceso',
                 'subItems' => [
-                    ['name' => 'Usuarios', 'path' => '/users'],
-                    ['name' => 'Roles y Permisos', 'path' => '/roles'],
+                    ['name' => 'Usuarios', 'path' => '/users', 'permission' => 'ver usuarios'],
+                    ['name' => 'Roles y Permisos', 'path' => '/roles', 'permission' => 'ver Roles y Permisos'],
                 ]
-
             ],
             [
                 'icon' => 'box',
                 'name' => 'Inventario',
                 'subItems' => [
-                    ['name' => 'Productos', 'path' => '/products'],
-                    ['name' => 'Proveedores', 'path' => '/products'],
-                    ['name' => 'Categoria', 'path' => '/categories'],
-                    ['name' => 'Marcas', 'path' => '/bran'],
-
+                    ['name' => 'Productos', 'path' => '/products', 'permission' => 'ver productos'],
+                    ['name' => 'Proveedores', 'path' => '/suppliers', 'permission' => 'ver proveedores'],
+                    ['name' => 'Categoria', 'path' => '/categories', 'permission' => 'ver categorias'],
+                    ['name' => 'Marcas', 'path' => '/brands', 'permission' => 'ver marcas'],
                 ]
             ],
             [
@@ -45,20 +46,6 @@ class MenuHelper
                 'path' => '/profile',
             ],
             [
-                'name' => 'Forms',
-                'icon' => 'forms',
-                'subItems' => [
-                    ['name' => 'Form Elements', 'path' => '/form-elements', 'pro' => false],
-                ],
-            ],
-            [
-                'name' => 'Tables',
-                'icon' => 'tables',
-                'subItems' => [
-                    ['name' => 'Basic Tables', 'path' => '/basic-tables', 'pro' => false]
-                ],
-            ],
-            [
                 'name' => 'Pages',
                 'icon' => 'pages',
                 'subItems' => [
@@ -66,12 +53,12 @@ class MenuHelper
                     ['name' => '404 Error', 'path' => '/error-404', 'pro' => false]
                 ],
             ],
-        ];
+        ]);
     }
 
     public static function getOthersItems()
     {
-        return [
+        return self::filterMenu([
             [
                 'icon' => 'charts',
                 'name' => 'Charts',
@@ -100,12 +87,47 @@ class MenuHelper
                     ['name' => 'Sign Up', 'path' => '/signup', 'pro' => false],
                 ],
             ],
-        ];
+        ]);
+    }
+
+    private static function filterMenu($items)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return [];
+        }
+
+        return collect($items)
+            ->map(function ($item) use ($user) {
+                if (isset($item['subItems'])) {
+                    // Filtrar subItems
+                    $item['subItems'] = collect($item['subItems'])
+                        ->filter(function ($subItem) use ($user) {
+                            return !isset($subItem['permission']) || $user->can($subItem['permission']);
+                        })
+                        ->values()
+                        ->toArray();
+
+                    // Retornar item solo si tiene subItems después del filtro
+                    return !empty($item['subItems']) ? $item : null;
+                }
+
+                // Filtrar items simples
+                if (isset($item['permission'])) {
+                    return $user->can($item['permission']) ? $item : null;
+                }
+
+                return $item;
+            })
+            ->filter()
+            ->values()
+            ->toArray();
     }
 
     public static function getMenuGroups()
     {
-        return [
+        return array_filter([
             [
                 'title' => 'Menu',
                 'items' => self::getMainNavItems()
@@ -114,13 +136,16 @@ class MenuHelper
                 'title' => 'Others',
                 'items' => self::getOthersItems()
             ]
-        ];
+        ], function($group) {
+            return !empty($group['items']);
+        });
     }
 
     public static function isActive($path)
     {
         return request()->is(ltrim($path, '/'));
     }
+
 
     public static function getIconSvg($iconName)
     {

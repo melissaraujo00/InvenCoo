@@ -19,12 +19,9 @@ Route::middleware(['auth'])->group(function () {
         return view('pages.dashboard.ecommerce', ['title' => 'InvenCoo']);
     })->name('dashboard');
 
-    Route::get('/calendar', function () {
-        return view('pages.calender', ['title' => 'Calendar']);
-    })->name('calendar');
 
     // profile pages
- Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
 
@@ -89,7 +86,7 @@ Route::middleware(['auth'])->group(function () {
         return view('pages.ui-elements.videos', ['title' => 'Videos']);
     })->name('videos');
 
-    // ... traslada aquí el resto de tus rutas (form-elements, tables, etc.)
+
 });
 
 

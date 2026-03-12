@@ -52,11 +52,6 @@ class SidebarController extends Controller
                         ],
                     ],
                     [
-                        'icon' => 'calendar-icon',
-                        'name' => 'Calendar',
-                        'path' => '/calendar',
-                    ],
-                    [
                         'icon' => 'user-circle-icon',
                         'name' => 'User Profile',
                         'path' => '/profile',

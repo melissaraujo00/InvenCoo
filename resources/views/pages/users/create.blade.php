@@ -87,6 +87,7 @@
                                 :options="$offices->pluck('name', 'id')"
                                 :value="old('office_id')"
                                 placeholder="Seleccionar oficina"
+                                searchable
                             />
                         </x-form.group>
 

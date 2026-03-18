@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -59,8 +60,13 @@ class User extends Authenticatable
         ];
     }
 
-    public function office()
+    public function office():BelongsTo
     {
         return $this->belongsTo(Office::class, 'office_id');
+    }
+
+    public function movementes():HasMany
+    {
+        return $this->hasMany(Movement::class);
     }
 }

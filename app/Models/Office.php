@@ -25,4 +25,9 @@ class Office extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    public function movements():HasMany
+    {
+        return $this->hasMany(Movement::class);
+    }
 }

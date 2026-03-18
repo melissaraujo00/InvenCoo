@@ -30,4 +30,20 @@ class Office extends Model
     {
         return $this->hasMany(Movement::class);
     }
+
+    public function buys(): HasMany
+    {
+        return $this->hasMany(Buy::class);
+    }
+
+     public function transfersAsOrigin(): HasMany
+    {
+        return $this->hasMany(Transfer::class, 'originating_branch');
+    }
+
+    // Transferencias donde esta oficina es la destinataria
+    public function transfersAsDestination(): HasMany
+    {
+        return $this->hasMany(Transfer::class, 'destination_branch');
+    }
 }

@@ -69,4 +69,19 @@ class User extends Authenticatable
     {
         return $this->hasMany(Movement::class);
     }
+
+    public function buys(): HasMany
+    {
+        return $this->hasMany(Buy::class);
+    }
+
+    public function requestedTransfers():HasMany
+    {
+        return $this->hasMany(Transfer::class, 'requesting_user');
+    }
+
+    public function authorizedTransfers(): HasMany
+    {
+        return $this->hasMany(Transfer::class, 'user_authorizes');
+    }
 }

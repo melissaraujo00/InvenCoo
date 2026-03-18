@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Buy;
+use App\Models\Product;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,6 +15,11 @@ return new class extends Migration
     {
         Schema::create('purchase_details', function (Blueprint $table) {
             $table->id();
+            $table->decimal('price', 12, 2);
+            $table->decimal('subtotal', 12,2);
+            $table->integer('quantity');
+            $table->foreignIdFor(Product::class);
+            $table->foreignIdFor(Buy::class);
             $table->timestamps();
         });
     }

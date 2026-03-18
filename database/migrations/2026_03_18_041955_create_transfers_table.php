@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Office;
+use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,6 +15,14 @@ return new class extends Migration
     {
         Schema::create('transfers', function (Blueprint $table) {
             $table->id();
+            $table->foreignIdFor(Office::class, 'originating_branch');
+            $table->foreignIdFor(Office::class, 'destination_branch');
+            $table->foreignIdFor(User::class, 'requesting_user');
+            $table->foreignIdFor(User::class, 'user_authorizes');
+            $table->dateTime('creation_date');
+            $table->dateTime('shipping_date')->nullable();
+            $table->dateTime('receipt_date')->nullable();
+            $table->enum('status', ['pending', 'preparing', 'shipped', 'in_transit', 'completed', 'cancelled', 'rejected'])->default('pending');
             $table->timestamps();
         });
     }

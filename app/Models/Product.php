@@ -50,5 +50,15 @@ class Product extends Model
     {
         return $this->hasMany(Movement::class);
     }
+
+    public function details():HasMany
+    {
+        return $this->hasMany(PurchaseDetail::class);
+    }
+
+    public function transferDetails():HasMany
+    {
+        return $this->hasMany(TransferDetail::class);
+    }
 }
 

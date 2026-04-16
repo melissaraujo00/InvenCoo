@@ -33,7 +33,13 @@ class MenuHelper
                     ['name' => 'Proveedores', 'path' => '/suppliers', 'permission' => 'ver proveedores'],
                     ['name' => 'Categoria', 'path' => '/categories', 'permission' => 'ver categorias'],
                     ['name' => 'Marcas', 'path' => '/brands', 'permission' => 'ver marcas'],
+                    ['name' => 'Movimientos', 'path' => '/movements', 'permission' => 'ver movimientos']
                 ]
+            ],
+            [
+                'icon' => 'user-profile',
+                'name' => 'Compras',
+                'path' => '/buys',
             ],
             [
                 'icon' => 'user-profile',

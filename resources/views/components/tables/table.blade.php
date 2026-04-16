@@ -8,11 +8,12 @@
     'createRoute' => null,
     'createButtonText' => 'Agregar Nuevo',
     'showActions' => true,
-    'actions' => null
+    'actions' => null,
+    'showFilters' => false, // nueva bandera para mostrar slot de filtros
 ])
 
 <div class="rounded-2xl border border-gray-200 bg-white pt-4 dark:border-gray-800 dark:bg-white/[0.03]">
-    @if($title || $searchable || $createRoute)
+    @if($title || $searchable || $createRoute || $showFilters)
     <div class="flex flex-col gap-2 px-5 mb-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         @if($title)
         <div>
@@ -21,8 +22,14 @@
         @endif
 
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {{-- Buscador simple --}}
             @if($searchable)
                 <x-tables.filters.search />
+            @endif
+
+            {{-- Slot para filtros adicionales (se muestra siempre, pero se puede condicionar) --}}
+            @if(isset($filters))
+                {{ $filters }}
             @endif
 
             @if($createRoute)

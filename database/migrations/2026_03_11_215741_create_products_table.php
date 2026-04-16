@@ -20,10 +20,10 @@ return new class extends Migration
             $table->string('name', 50);
             $table->foreignIdFor(Category::class)->constrained();
             $table->foreignIdFor(Brand::class)->nullable()->constrained();
-            $table->foreignIdFor(Office::class)->constrained();
             $table->string('unit', 50);
-            $table->integer('stock');
             $table->integer('stock_minimun');
+            $table->integer('stock');
+            $table->foreignIdFor(Office::class);
             $table->timestamps();
         });
     }

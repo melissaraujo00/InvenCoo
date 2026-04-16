@@ -10,4 +10,11 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    server: {
+        hmr: {
+            host: 'localhost',
+            protocol: 'ws',
+        },
+        https: false, // Opcional: Desactiva HTTPS para Vite si no es necesario
+    },
 });

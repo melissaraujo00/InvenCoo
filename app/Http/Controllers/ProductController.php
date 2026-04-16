@@ -13,14 +13,23 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+
+
     public function index(Request $request)
     {
         $products = Product::with(['category', 'brand', 'office', 'suppliers'])
-                    ->when($request->filled('search'), function($query) use ($request) {
-                        $query->where('code', 'LIKE', "%{$request->search}%")
-                              ->orWhere('name', 'LIKE', "%{$request->search}%");
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->search;
+                $query->where('code', 'LIKE', "%{$search}%")
+                    ->orWhere('name', 'LIKE', "%{$search}%")
+                    ->orWhereHas('brand', function ($q) use ($search) {
+                        $q->where('name', 'LIKE', "%{$search}%");
                     })
-                    ->paginate(15);
+                    ->orWhereHas('office', function ($q) use ($search) {
+                        $q->where('name', 'LIKE', "%{$search}%");
+                    });
+            })
+            ->paginate(15);
 
         return view('pages.products.index', compact('products'));
     }
@@ -35,27 +44,36 @@ class ProductController extends Controller
     }
 
     public function store(StoreProductRequest $request)
-    {
-        // Obtener datos validados
-        $validated = $request->validated();
+{
+    $validated = $request->validated();
 
-        // Asignar la oficina del usuario autenticado
-        $validated['office_id'] = $request->user()->office_id;
+    // Generar código único automáticamente
+    $lastProduct = Product::orderBy('id', 'desc')->first();
+    $lastCode = $lastProduct ? $lastProduct->code : 'PROD-0000';
+    $lastNumber = (int) substr($lastCode, 5);
+    $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+    $validated['code'] = 'PROD-' . $newNumber;
 
-        // Crear el producto
-        $product = Product::create($validated);
+    // Asignar la oficina del usuario autenticado
+    $validated['office_id'] = $request->user()->office_id;
 
-        // Asociar proveedores con sus precios
-        if ($request->has('suppliers') && !empty($request->suppliers)) {
-            $suppliersData = [];
-            foreach ($request->suppliers as $supplier) {
+    $product = Product::create($validated);
+
+    // Asociar proveedores (sin cambios)
+    if ($request->has('suppliers') && !empty($request->suppliers)) {
+        $suppliersData = [];
+        foreach ($request->suppliers as $supplier) {
+            if (!empty($supplier['id'])) {
                 $suppliersData[$supplier['id']] = ['price' => $supplier['price']];
             }
+        }
+        if (!empty($suppliersData)) {
             $product->suppliers()->attach($suppliersData);
         }
-
-        return to_route('products.index')->with('success', 'Producto creado exitosamente.');
     }
+
+    return to_route('products.index')->with('success', 'Producto creado exitosamente.');
+}
 
     public function show(Product $product)
     {

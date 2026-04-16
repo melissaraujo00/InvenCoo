@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\BuyController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MovementController;
 use Inertia\Inertia;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
@@ -11,6 +13,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SupplierController;
+use App\Models\Movement;
 
 // Rutas protegidas (Solo para usuarios logueados)
 Route::middleware(['auth'])->group(function () {
@@ -33,7 +36,10 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('categories', CategoryController::class);
     Route::resource('suppliers', SupplierController::class);
     Route::resource('products', ProductController::class);
-
+    Route::resource('movements', MovementController::class);
+    Route::resource('buys', BuyController::class);
+Route::patch('buys/{buy}/cancel', [BuyController::class, 'cancel'])->name('buys.cancel');
+Route::patch('buys/{buy}/restore', [BuyController::class, 'restore'])->name('buys.restore');
     // pages
 
     Route::get('/blank', function () {

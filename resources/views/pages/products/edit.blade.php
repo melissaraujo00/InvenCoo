@@ -31,15 +31,16 @@
             {{-- Tarjeta: Información del Producto --}}
             <x-common.component-card title="" class="mb-1">
                 <div class="p-1">
-                    {{-- Primera fila: Código y Nombre --}}
+                    {{-- Primera fila: Código (solo lectura) y Nombre --}}
                     <div class="flex flex-col md:flex-row gap-4 mb-4">
                         <div class="w-full md:w-1/2 space-y-4">
-                            <x-form.group name="code" label="Código" :required="true">
-                                <x-form.input
-                                    name="code"
-                                    placeholder="Ej. PROD-001"
-                                    :required="true"
-                                    :value="old('code', $product->code)" />
+                            <x-form.group name="code" label="Código" :required="false">
+                                {{-- Mostrar el código como texto plano (no editable) --}}
+                                <div class="rounded-lg border border-gray-300 bg-gray-100 dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300">
+                                    {{ $product->code }}
+                                </div>
+                                {{-- Campo oculto para enviar el código (opcional, si se requiere en el request) --}}
+                                <input type="hidden" name="code" value="{{ $product->code }}">
                             </x-form.group>
                         </div>
                         <div class="w-full md:w-1/2 space-y-4">
@@ -135,7 +136,6 @@
                                 ];
                             })->toArray());
 
-                            // Si no hay proveedores, al menos una fila vacía
                             if (empty($suppliersList)) {
                                 $suppliersList = [['id' => '', 'price' => '']];
                             }
@@ -169,7 +169,6 @@
                         @endforeach
                     </div>
 
-                    {{-- Botón para agregar más proveedores --}}
                     <div class="mt-4">
                         <button type="button" id="add-supplier-row"
                             class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 transition-colors">
@@ -182,7 +181,6 @@
                 </div>
             </x-common.component-card>
 
-            {{-- Botones de acción --}}
             <div class="flex flex-col sm:flex-row justify-end gap-3 mt-8">
                 <x-form.button
                     type="button"
@@ -213,34 +211,23 @@
 
         addButton.addEventListener('click', function() {
             const rows = container.querySelectorAll('.supplier-row');
-            const newIndex = rows.length; // el nuevo índice es la cantidad de filas actual
+            const newIndex = rows.length;
 
-            // Clonar la primera fila (siempre existe al menos una)
             const firstRow = rows[0];
             const newRow = firstRow.cloneNode(true);
 
-            // Actualizar los atributos name de los campos dentro de la nueva fila
             newRow.querySelectorAll('select, input').forEach(function(element) {
                 const name = element.getAttribute('name');
                 if (name) {
-                    // Reemplazar el índice entre corchetes, ej: suppliers[0][id] -> suppliers[1][id]
                     const newName = name.replace(/\[\d+\]/, '[' + newIndex + ']');
                     element.setAttribute('name', newName);
-
-                    // Limpiar el valor seleccionado/ingresado
-                    if (element.tagName === 'SELECT') {
-                        element.value = '';
-                    } else if (element.tagName === 'INPUT') {
-                        element.value = '';
-                    }
-
-                    // Eliminar cualquier atributo selected/checked residual
-                    element.removeAttribute('selected');
-                    element.removeAttribute('checked');
                 }
+                if (element.tagName === 'SELECT') element.value = '';
+                else if (element.tagName === 'INPUT') element.value = '';
+                element.removeAttribute('selected');
+                element.removeAttribute('checked');
             });
 
-            // Agregar la nueva fila al contenedor
             container.appendChild(newRow);
         });
     });

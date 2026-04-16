@@ -36,6 +36,8 @@ class Office extends Model
         return $this->hasMany(Buy::class);
     }
 
+    
+
      public function transfersAsOrigin(): HasMany
     {
         return $this->hasMany(Transfer::class, 'originating_branch');

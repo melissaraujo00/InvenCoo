@@ -4,30 +4,27 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Movement extends Model
 {
     protected $fillable = [
-        'product_id',
         'office_id',
         'date_movement',
         'type_id',
         'user_id',
         'transaction_id',
-        'amount',
         'description',
-        'stock_total',
-        'input_type'
+        'input_type',
+        'origin_office_id',
+        'destination_office_id'
     ];
 
-    public function product():BelongsTo
-    {
-        return $this->belongsTo(Product::class);
-    }
+
 
     public function office(): BelongsTo
     {
-        return $this->belongsTo(Office::class);
+        return $this->belongsTo(Office::class, 'office_id');
     }
 
     public function type():BelongsTo
@@ -40,5 +37,20 @@ class Movement extends Model
         return $this->belongsTo(User::class);
     }
 
-    
+    public function originatingBranch():BelongsTo
+    {
+        return $this->belongsTo(Office::class, 'origin_office_id');
+    }
+
+    public function destinationBranch(): BelongsTo
+    {
+        return $this->belongsTo(Office::class, 'destination_office_id');
+    }
+
+    public function details(): HasMany
+    {
+        return $this->hasMany(MovementDetail::class);
+    }
+
+
 }

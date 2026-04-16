@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Movement;
 use App\Models\Office;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
@@ -23,6 +24,8 @@ return new class extends Migration
             $table->dateTime('shipping_date')->nullable();
             $table->dateTime('receipt_date')->nullable();
             $table->enum('status', ['pending', 'preparing', 'shipped', 'in_transit', 'completed', 'cancelled', 'rejected'])->default('pending');
+            $table->foreignIdFor(Movement::class, 'out_movement_id')->nullable()->constrained('movements');
+            $table->foreignIdFor(Movement::class, 'in_movement_id')->nullable()->constrained('movements');
             $table->timestamps();
         });
     }

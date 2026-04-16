@@ -30,17 +30,8 @@
             {{-- Tarjeta: Información del Producto --}}
             <x-common.component-card title="" class="mb-1">
                 <div class="p-1">
-                    {{-- Primera fila: Código y Nombre --}}
+                    {{-- Primera fila: solo Nombre --}}
                     <div class="flex flex-col md:flex-row gap-4 mb-4">
-                        <div class="w-full md:w-1/2 space-y-4">
-                            <x-form.group name="code" label="Código" :required="true">
-                                <x-form.input
-                                    name="code"
-                                    placeholder="Ej. PROD-001"
-                                    :required="true"
-                                    :value="old('code')" />
-                            </x-form.group>
-                        </div>
                         <div class="w-full md:w-1/2 space-y-4">
                             <x-form.group name="name" label="Nombre" :required="true">
                                 <x-form.input
@@ -50,8 +41,17 @@
                                     :value="old('name')" />
                             </x-form.group>
                         </div>
+                        <div class="w-full md:w-1/2 space-y-4">
+                            <x-form.group name="unit" label="Unidad" :required="true">
+                                <x-form.input
+                                    type="text"
+                                    name="unit"
+                                    placeholder="Caja"
+                                    :required="true"
+                                    :value="old('unit')" />
+                            </x-form.group>
+                        </div>
                     </div>
-
                     {{-- Segunda fila: Categoría y Marca --}}
                     <div class="flex flex-col md:flex-row gap-4 mb-4">
                         <div class="w-full md:w-1/2 space-y-4">
@@ -105,19 +105,7 @@
                         </div>
                     </div>
 
-                    {{-- Cuarta fila: Unidad --}}
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <div class="w-full md:w-1/2 space-y-4">
-                            <x-form.group name="unit" label="Unidad" :required="true">
-                                <x-form.input
-                                    type="text"
-                                    name="unit"
-                                    placeholder="Caja"
-                                    :required="true"
-                                    :value="old('unit')" />
-                            </x-form.group>
-                        </div>
-                    </div>
+
                 </div>
             </x-common.component-card>
 

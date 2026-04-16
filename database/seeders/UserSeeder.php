@@ -49,10 +49,10 @@ class UserSeeder extends Seeder
             'Crear Tipo Movimiento',
             'Editar Tipo Movimiento',
             'Eliminar Tipo Movimiento',
-            'Ver Movimiento',
-            'Crear Movimiento',
-            'Editar Movimiento',
-            'Eliminar Movimiento',
+            'ver movimientos',
+            'crear movimientos',
+            'editar movimientos',
+            'eliminar movimientos',
             'ver proveedores'
 
         ];

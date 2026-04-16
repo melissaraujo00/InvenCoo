@@ -17,16 +17,15 @@ return new class extends Migration
     {
         Schema::create('movements', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Product::class)->constrained();
             $table->foreignIdFor(Office::class)->constrained();
             $table->date('date_movement');
             $table->foreignIdFor(Type::class)->constrained();
             $table->foreignIdFor(User::class)->constrained();
-            $table->integer('transaction_id');
-            $table->integer('amount');
+            $table->string('transaction_id', 255)->unique();
             $table->text('description');
-            $table->integer('stock_total');
             $table->char('input_type', 1);
+            $table->foreignIdFor(Office::class, 'origin_office_id')->nullable()->constrained('offices');
+            $table->foreignIdFor(Office::class, 'destination_office_id')->nullable()->constrained('offices');
             $table->timestamps();
         });
     }

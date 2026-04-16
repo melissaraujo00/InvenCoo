@@ -14,16 +14,13 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code'                => 'required|string|max:50|unique:products,code',
+            //'code'                => 'required|string|max:50|unique:products,code',
             'name'                => 'required|string|max:50|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'category_id'         => 'required|exists:categories,id',
             'brand_id'            => 'nullable|exists:brands,id',
-            // 'office_id'         => 'required|exists:offices,id', // Eliminado, se asigna desde el controlador
             'stock'               => 'required|integer|min:0',
             'stock_minimun'       => 'required|integer|min:0',
             'unit'                => 'required|string|max:50|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
-
-            // Validación para proveedores
             'suppliers'           => 'nullable|array',
             'suppliers.*.id'      => 'required|exists:suppliers,id',
             'suppliers.*.price'   => 'required|numeric|min:0',
@@ -33,7 +30,7 @@ class StoreProductRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'code'                => 'código',
+            //'code'                => 'código',
             'name'                => 'nombre',
             'category_id'         => 'categoría',
             'brand_id'            => 'marca',
@@ -49,8 +46,7 @@ class StoreProductRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'code.required'       => 'El :attribute es obligatorio',
-            'code.unique'         => 'El :attribute ya está registrado',
+           // 'code.required'       => 'El :attribute es obligatorio',
             'name.required'       => 'El :attribute es obligatorio',
             'name.regex'          => 'El :attribute solo puede contener letras y espacios',
             'category_id.required' => 'La :attribute es obligatoria',

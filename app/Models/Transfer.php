@@ -17,7 +17,9 @@ class Transfer extends Model
         'creation_date',
         'shipping_date',
         'receipt_date',
-        'status'
+        'status',
+        'out_movement_id',
+        'in_movement_id'
     ];
 
     protected $casts = ['status' => StatusEnum::class];
@@ -45,5 +47,15 @@ class Transfer extends Model
     public function details():HasMany
     {
         return $this->hasMany(TransferDetail::class);
+    }
+
+    public function outMovement(): BelongsTo
+    {
+        return $this->belongsTo(Movement::class, 'out_movement_id');
+    }
+
+    public function inMovement(): BelongsTo
+    {
+        return $this->belongsTo(Movement::class, 'in_movement_id');
     }
 }

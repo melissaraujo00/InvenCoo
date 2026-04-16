@@ -1,7 +1,7 @@
 <?php
 
+use App\Models\Movement;
 use App\Models\Product;
-use App\Models\Supplier;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,12 +13,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_supplier', function (Blueprint $table) {
+        Schema::create('movement_details', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Supplier::class)->constrained();
+            $table->foreignIdFor(Movement::class)->constrained();
             $table->foreignIdFor(Product::class)->constrained();
-            $table->integer('stock')->default(0);
-            $table->decimal('price', 12,2);
+            $table->integer('quantity');
+            $table->decimal('unit_price', 12, 2)->nullable();
+            $table->decimal('subtotal', 12, 2)->nullable();
+            $table->integer('stock_after')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_supplier');
+        Schema::dropIfExists('movement_datails');
     }
 };

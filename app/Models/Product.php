@@ -14,16 +14,20 @@ class Product extends Model
         'name',
         'category_id',
         'brand_id',
-        'office_id',
-        'stock',
         'stock_minimun',
-        'unit'
+        'unit',
+        'stock',
+        'office_id',
+
+
     ];
 
-    public function suppliers(): BelongsToMany
+    // Proveedores (muchos a muchos con campo price)
+    public function suppliers()
     {
-        return $this->belongsToMany(Supplier::class)
-                    ->withPivot('price');
+        return $this->belongsToMany(Supplier::class, 'product_supplier')
+                    ->withPivot('price')
+                    ->withTimestamps();
     }
 
     /**
@@ -34,9 +38,7 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
-    public function office():BelongsTo{
-        return $this->belongsTo(Office::class);
-    }
+
 
     /**
      * Relación con marca (si existe)
@@ -44,11 +46,6 @@ class Product extends Model
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
-    }
-
-    public function movements():HasMany
-    {
-        return $this->hasMany(Movement::class);
     }
 
     public function details():HasMany
@@ -60,5 +57,17 @@ class Product extends Model
     {
         return $this->hasMany(TransferDetail::class);
     }
+
+    public function movementDetails(): HasMany
+    {
+        return $this->hasMany(MovementDetail::class);
+    }
+
+    public function office():BelongsTo{
+        return $this->belongsTo(Office::class);
+    }
+
+
+
 }
 

@@ -5,23 +5,21 @@ namespace App\Enums;
 enum StatusEnum: string
 {
     case PENDING = 'pending';
-    case PREPARING = 'preparing';
-    case SHIPPED = 'shipped';
-    case IN_TRANSIT = 'in_transit';
-    case COMPLETED = 'completed';
-    case CANCELLED = 'cancelled';
+    case APPROVED = 'approved';
+    case PARTIALLY_APPROVED = 'partially_approved';
     case REJECTED = 'rejected';
+    case SHIPPED = 'shipped';
+    case RECEIVED = 'received';
 
     public function label(): string
     {
-        return match ($this) {
+        return match($this) {
             self::PENDING => 'Pendiente',
-            self::PREPARING => 'En preparación',
-            self::SHIPPED => 'Enviada',
-            self::IN_TRANSIT => 'En tránsito',
-            self::COMPLETED => 'Completada',
-            self::CANCELLED => 'Cancelada',
+            self::APPROVED => 'Aprobada',
+            self::PARTIALLY_APPROVED => 'Aprobación parcial',
             self::REJECTED => 'Rechazada',
+            self::SHIPPED => 'Enviada',
+            self::RECEIVED => 'Recibida',
         };
     }
 

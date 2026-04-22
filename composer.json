@@ -12,6 +12,7 @@
         "php": "^8.2",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
+        "netflie/laravel-notification-whatsapp": "^1.4",
         "spatie/laravel-data": "^4.19",
         "spatie/laravel-permission": "^7.1"
     },

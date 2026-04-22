@@ -1,0 +1,20 @@
+{
+  "name": "transfer_request_admin",
+  "category": "UTILITY",
+  "language": "es",
+  "allow_category_change": true,
+  "components": [
+    {
+      "type": "BODY",
+      "text": "Nueva solicitud de transferencia #{{1}}. Haz clic para revisar: {{2}} Gracias.",
+      "example": {
+        "body_text": [
+          [
+            "12345",
+            "https://invencoo.test/transfers/12345"
+          ]
+        ]
+      }
+    }
+  ]
+}

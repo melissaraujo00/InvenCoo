@@ -19,11 +19,11 @@ return new class extends Migration
             $table->foreignIdFor(Office::class, 'originating_branch');
             $table->foreignIdFor(Office::class, 'destination_branch');
             $table->foreignIdFor(User::class, 'requesting_user');
-            $table->foreignIdFor(User::class, 'user_authorizes');
+            $table->foreignIdFor(User::class, 'user_authorizes')->nullable();
             $table->dateTime('creation_date');
             $table->dateTime('shipping_date')->nullable();
             $table->dateTime('receipt_date')->nullable();
-            $table->enum('status', ['pending', 'preparing', 'shipped', 'in_transit', 'completed', 'cancelled', 'rejected'])->default('pending');
+            $table->string('status')->default('pending');
             $table->foreignIdFor(Movement::class, 'out_movement_id')->nullable()->constrained('movements');
             $table->foreignIdFor(Movement::class, 'in_movement_id')->nullable()->constrained('movements');
             $table->timestamps();

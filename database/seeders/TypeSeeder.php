@@ -20,7 +20,9 @@ class TypeSeeder extends Seeder
 
             ['name' => 'Devoluciones', 'description' => 'Registro de ingreso al inventario de productos que han sido devueltos.'],
 
-            ['name' => 'Ajuste', 'description' => 'Modificación realizada en el inventario para corregir errores o inconsistencias en los registros.']
+            ['name' => 'Ajuste', 'description' => 'Modificación realizada en el inventario para corregir errores o inconsistencias en los registros.'],
+            ['name' => 'Transferencia Salida', 'description' => 'Salida de inventario por transferencia entre sucursales'],
+    ['name' => 'Transferencia Entrada', 'description' => 'Entrada de inventario por transferencia entre sucursales'],
 
 
         ];

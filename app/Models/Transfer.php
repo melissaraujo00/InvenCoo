@@ -6,9 +6,12 @@ use App\Enums\StatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class Transfer extends Model
 {
+    use AuthorizesRequests;
+
     protected $fillable = [
         'originating_branch',
         'destination_branch',

@@ -43,6 +43,11 @@ class MenuHelper
             ],
             [
                 'icon' => 'user-profile',
+                'name' => 'Tranferencias',
+                'path' => '/transfers',
+            ],
+            [
+                'icon' => 'user-profile',
                 'name' => 'User Profile',
                 'path' => '/profile',
             ],

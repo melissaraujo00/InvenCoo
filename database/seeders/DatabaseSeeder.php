@@ -15,11 +15,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-        $offices = office::factory(10)->create();
+
         $this->call([
             RoleSeeder::class,
             UserSeeder::class,
+            OfficeSeeder::class,
             TypeSeeder::class
         ]);
 
@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
             'number' => '00000000',
             'password'=> Hash::make('123'),
             'status'=>true,
-            'office_id' => $offices->random()->id
+            'office_id' => 1
         ]);
 
         $adminUser->assignRole('Administrador');

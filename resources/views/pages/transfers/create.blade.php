@@ -10,25 +10,22 @@
             {{-- Tarjeta de información general --}}
             <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- Origen (solo lectura) --}}
+                    {{-- Origen fijo (solo lectura) --}}
                     <x-form.input
                         label="Sucursal origen"
-                        :value="$originOffices->first()->name ?? 'N/A'"
+                        :value="$sourceOffice->name"
                         disabled
                         readonly
                     />
 
-                    {{-- Destino --}}
-                    <x-form.select
-                        name="destination_branch"
+                    {{-- Destino fijo (solo lectura) --}}
+                    <x-form.input
                         label="Sucursal destino"
-                        :options="$destinationOffices->pluck('name', 'id')->toArray()"
-                        placeholder="Seleccione una sucursal"
-                        required
+                        :value="$destinationOffice->name"
+                        disabled
+                        readonly
                     />
                 </div>
-
-               
             </div>
 
             {{-- Tarjeta de productos --}}

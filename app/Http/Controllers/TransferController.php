@@ -12,114 +12,132 @@ use App\Models\MovementDetail;
 use App\Models\Type;
 use App\Models\User;
 use App\Notifications\TransferApproved;
+use App\Notifications\TransferReadyToShip;
+use App\Notifications\TransferReceived;
 use App\Notifications\TransferRequested;
 use App\Notifications\TransferWhatsappNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-use NotificationChannels\WhatsApp\Component;
+
 
 class TransferController extends Controller
 {
-    public function index(Request $request)
-    {
-        $user = Auth::user();
+   public function index(Request $request)
+{
+    $user = Auth::user();
+    $role = $user->getRoleNames()->first(); // 'Administrador', 'Administrador Restaurante' o 'Bodega'
+
+    // Administrador ve todo
+    if ($role === 'Administrador') {
         $transfers = Transfer::with(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product'])
-            ->when($user->hasRole('Restaurante'), function ($q) use ($user) {
-                // El restaurante solo ve sus solicitudes (desde su oficina)
-                $q->where('requesting_user', $user->id);
-            })
-            ->when($user->hasRole('Bodega'), function ($q) use ($user) {
-                // La bodega ve las transferencias donde su oficina es origen o destino
-                $q->where('originating_branch', $user->office_id)
-                  ->orWhere('destination_branch', $user->office_id);
-            })
-            // Admin ve todo
             ->orderBy('creation_date', 'desc')
             ->paginate(15);
-
         return view('pages.transfers.index', compact('transfers'));
     }
 
-    public function create()
+    // Bodega (Cooperativa) – separar pendientes de envío e historial
+    if ($role === 'Bodega') {
+        $pendingShipments = Transfer::with(['destinationBranch', 'requestingUser', 'details.product'])
+            ->where('originating_branch', $user->office_id) // Cooperativa
+            ->whereIn('status', [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED])
+            ->orderBy('creation_date', 'asc')
+            ->get();
+
+        $history = Transfer::with(['destinationBranch', 'requestingUser', 'details.product'])
+            ->where('originating_branch', $user->office_id)
+            ->whereIn('status', [StatusEnum::SHIPPED, StatusEnum::RECEIVED, StatusEnum::REJECTED])
+            ->orderBy('creation_date', 'desc')
+            ->get();
+
+        return view('pages.transfers.bodega_index', compact('pendingShipments', 'history'));
+    }
+
+    // Administrador Restaurante – solo las transferencias donde su oficina es destino
+    $transfers = Transfer::with(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product'])
+        ->where('destination_branch', $user->office_id)
+        ->orderBy('creation_date', 'desc')
+        ->paginate(15);
+
+    return view('pages.transfers.index', compact('transfers'));
+}
+
+
+public function create()
 {
     $user = Auth::user();
     if (!$user->hasRole('Administrador Restaurante')) {
         abort(403, 'No autorizado.');
     }
 
-    $originOffices = Office::where('id', $user->office_id)->get();
-    $destinationOffices = Office::where('id', '!=', $user->office_id)->get();
+    $sourceOffice = Office::find(1); // Cooperativa
+    $destinationOffice = Office::find($user->office_id); // Restaurante del usuario
 
-    // Obtener todos los productos (globales)
     $products = Product::all();
-
-    // Para cada producto, calcular el stock disponible en la oficina origen
-    $products->each(function ($product) use ($user) {
-        // Obtener el último movimiento de ese producto en la oficina origen
+    $products->each(function ($product) use ($sourceOffice) {
         $lastMovementDetail = MovementDetail::where('product_id', $product->id)
-            ->whereHas('movement', function ($query) use ($user) {
-                $query->where('office_id', $user->office_id);
+            ->whereHas('movement', function ($query) use ($sourceOffice) {
+                $query->where('office_id', $sourceOffice->id);
             })
             ->orderBy('id', 'desc')
             ->first();
-
         $product->available_stock = $lastMovementDetail ? $lastMovementDetail->stock_after : 0;
     });
 
-    return view('pages.transfers.create', compact('originOffices', 'destinationOffices', 'products'));
+    return view('pages.transfers.create', compact('sourceOffice', 'destinationOffice', 'products'));
 }
 
     public function store(Request $request)
-    {
-        $user = Auth::user();
-        $validated = $request->validate([
-            'destination_branch' => 'required|exists:offices,id',
-            'products' => 'required|array|min:1',
-            'products.*.product_id' => 'required|exists:products,id',
-            'products.*.quantity' => 'required|integer|min:1',
+{
+    $user = Auth::user();
+    if (!$user->hasRole('Administrador Restaurante')) {
+        abort(403);
+    }
+
+    $validated = $request->validate([
+        'products' => 'required|array|min:1',
+        'products.*.product_id' => 'required|exists:products,id',
+        'products.*.quantity' => 'required|integer|min:1',
+    ]);
+
+    DB::transaction(function () use ($validated, $user) {
+        // Origen siempre Cooperativa (id=1), destino la oficina del usuario
+        $transfer = Transfer::create([
+            'originating_branch' => 1,
+            'destination_branch' => $user->office_id,
+            'requesting_user' => $user->id,
+            'creation_date' => now(),
+            'status' => StatusEnum::PENDING,
         ]);
 
-        DB::transaction(function () use ($validated, $user) {
-            $transfer = Transfer::create([
-                'originating_branch' => $user->office_id,
-                'destination_branch' => $validated['destination_branch'],
-                'requesting_user' => $user->id,
-                'creation_date' => now(),
-                'status' => StatusEnum::PENDING,
+        foreach ($validated['products'] as $item) {
+            TransferDetail::create([
+                'transfer_id' => $transfer->id,
+                'product_id' => $item['product_id'],
+                'quantity_requested' => $item['quantity'],
+                'quantity_sent' => 0,
             ]);
-            foreach ($validated['products'] as $item) {
-                TransferDetail::create([
-                    'transfer_id' => $transfer->id,
-                    'product_id' => $item['product_id'],
-                    'quantity_requested' => $item['quantity'],
-                    'quantity_sent' => 0,
-                ]);
+        }
+
+        // Notificar a Administradores (Cooperativa)
+        $admins = User::role('Administrador')->get();
+        Notification::send($admins, new TransferRequested($transfer));
+
+        // Notificación WhatsApp (ya existente)
+        foreach ($admins as $admin) {
+            if ($admin->number) {
+                $admin->notify(new TransferWhatsappNotification($transfer, 'transfer_request_admin', [
+                    (string) $transfer->id,
+                    route('transfers.show', $transfer)
+                ]));
             }
+        }
+    });
 
-            // === NOTIFICACIÓN INTERNA a todos los administradores ===
-            $admins = User::role('Administrador')->get();
-            Notification::send($admins, new TransferRequested($transfer));
-
-            // === NOTIFICACIÓN WHATSAPP (ya existente) ===
-            $url = route('transfers.show', $transfer);
-            foreach ($admins as $admin) {
-                if ($admin->number) {
-                    $admin->notify(new TransferWhatsappNotification(
-                        $transfer,
-                        'transfer_request_admin',
-                        [
-                            (string) $transfer->id,
-                            (string) route('transfers.show', $transfer)
-                        ]
-                    ));
-                }
-            }
-        });
-
-        return redirect()->route('transfers.index')->with('success', 'Solicitud creada. Se ha notificado al administrador.');
-    }
+    return redirect()->route('transfers.index')->with('success', 'Solicitud creada. Se ha notificado al administrador.');
+}
 
     public function approve(Request $request, Transfer $transfer)
     {
@@ -160,11 +178,30 @@ class TransferController extends Controller
             ]);
 
             // === NOTIFICACIÓN INTERNA al solicitante ===
+            // Notificar al solicitante (ya existente)
             $requester = User::find($transfer->requesting_user);
             if ($requester) {
                 $requester->notify(new TransferApproved($transfer));
             }
 
+            // Notificar a los usuarios con rol Bodega en la oficina origen (Cooperativa)
+            $bodegas = User::role('Bodega')->where('office_id', $transfer->originating_branch)->get();
+            foreach ($bodegas as $bodega) {
+                // Notificación interna (base de datos)
+                $bodega->notify(new TransferReadyToShip($transfer));
+
+                // Notificación WhatsApp (usando tu clase existente)
+                if ($bodega->number) {
+                    $bodega->notify(new TransferWhatsappNotification(
+                        $transfer,
+                        'transfer_request_admin',  // Nombre de la plantilla en WhatsApp Business
+                        [
+                            (string) $transfer->id,
+                            route('transfers.show', $transfer)
+                        ]
+                    ));
+                }
+            }
             // Aquí podrías enviar también notificaciones WhatsApp (opcional)
         });
 
@@ -172,127 +209,118 @@ class TransferController extends Controller
     }
 
 
-    public function show(Transfer $transfer)
-    {
-        $transfer->load(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product']);
-        $user = Auth::user();
-        $canApprove = $user->hasRole('Administrador') && $transfer->status === StatusEnum::PENDING;
-        $canShip = $user->hasRole('Bodega') && $user->office_id == $transfer->originating_branch && in_array($transfer->status, [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED]);
-        $canReceive = $user->hasRole('Bodega') && $user->office_id == $transfer->destination_branch && $transfer->status === StatusEnum::SHIPPED;
+   public function show(Transfer $transfer)
+{
+    $transfer->load(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product']);
+    $user = Auth::user();
+    $canApprove = $user->hasRole('Administrador') && $transfer->status === StatusEnum::PENDING;
+    $canShip = $user->hasRole('Bodega') && $user->office_id == $transfer->originating_branch && in_array($transfer->status, [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED]);
+    // Solo Administrador Restaurante puede recibir
+    $canReceive = $user->hasRole('Administrador Restaurante') && $user->office_id == $transfer->destination_branch && $transfer->status === StatusEnum::SHIPPED;
 
-        return view('pages.transfers.show', compact('transfer', 'canApprove', 'canShip', 'canReceive'));
-    }
+    return view('pages.transfers.show', compact('transfer', 'canApprove', 'canShip', 'canReceive'));
+}
 
 
 
     public function ship(Transfer $transfer)
-    {
-         $user = Auth::user();
+{
+    $user = Auth::user();
     if (!$user->hasRole('Bodega') || $user->office_id != $transfer->originating_branch || !in_array($transfer->status, [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED])) {
         abort(403, 'No autorizado.');
     }
 
-        DB::transaction(function () use ($transfer) {
-            // Crear movimiento de salida (S) en la oficina origen
-            $outMovement = Movement::create([
-                'office_id' => $transfer->originating_branch,
-                'date_movement' => now(),
-                'type_id' => Type::where('name', 'transferencia_salida')->first()->id,
-                'user_id' => Auth::id(),
-                'transaction_id' => 'TRF-OUT-' . $transfer->id,
-                'description' => 'Salida por transferencia #' . $transfer->id,
-                'input_type' => 'S',
-                'origin_office_id' => $transfer->originating_branch,
-                'destination_office_id' => $transfer->destination_branch,
-            ]);
+    DB::transaction(function () use ($transfer) {
+        // Crear movimiento de salida (S) en la oficina origen
+        $outMovement = Movement::create([
+            'office_id' => $transfer->originating_branch,
+            'date_movement' => now(),
+            'type_id' => Type::where('name', 'Transferencia Salida')->first()->id,
+            'user_id' => Auth::id(),
+            'transaction_id' => 'TRF-OUT-' . $transfer->id,
+            'description' => 'Salida por transferencia #' . $transfer->id,
+            'input_type' => 'S',
+            'origin_office_id' => $transfer->originating_branch,
+            'destination_office_id' => $transfer->destination_branch,
+        ]);
 
-            foreach ($transfer->details as $detail) {
-                $qty = $detail->quantity_sent;
-                if ($qty > 0) {
-                    // Restar stock en origen
-                    $product = $detail->product;
-                    $product->decrement('stock', $qty);
+        foreach ($transfer->details as $detail) {
+            $qty = $detail->quantity_sent;
+            if ($qty > 0) {
+                $product = $detail->product;
+                $product->decrement('stock', $qty);
 
-                    MovementDetail::create([
-                        'movement_id' => $outMovement->id,
-                        'product_id' => $detail->product_id,
-                        'quantity' => $qty,
-                        'unit_price' => 0, // o precio promedio
-                        'subtotal' => 0,
-                        'stock_after' => $product->stock,
-                    ]);
-                }
+                MovementDetail::create([
+                    'movement_id' => $outMovement->id,
+                    'product_id' => $detail->product_id,
+                    'quantity' => $qty,
+                    'unit_price' => 0,
+                    'subtotal' => 0,
+                    'stock_after' => $product->stock,
+                ]);
             }
+        }
 
-            $transfer->update([
-                'shipping_date' => now(),
-                'out_movement_id' => $outMovement->id,
-                'status' => StatusEnum::SHIPPED,
-            ]);
-        });
+        $transfer->update([
+            'shipping_date' => now(),
+            'out_movement_id' => $outMovement->id,
+            'status' => StatusEnum::SHIPPED,
+        ]);
+    });
 
-        return redirect()->route('transfers.show', $transfer)->with('success', 'Transferencia enviada.');
+    // Notificación WhatsApp al solicitante (Administrador Restaurante)
+    $requester = User::find($transfer->requesting_user);
+    if ($requester && $requester->number) {
+        try {
+            $requester->notify(new TransferWhatsappNotification(
+                $transfer,
+                'transfer_request_admin', // Plantilla de WhatsApp (debes crearla)
+                [
+                    (string) $transfer->id,
+                    route('transfers.show', $transfer)
+                ]
+            ));
+        } catch (\Exception $e) {
+            Log::error('Error al enviar notificación WhatsApp de envío: ' . $e->getMessage());
+        }
     }
 
+    return redirect()->route('transfers.show', $transfer)->with('success', 'Transferencia enviada.');
+}
+
     public function receive(Transfer $transfer)
-    {
-        $user = Auth::user();
-    if (!$user->hasRole('Bodega') || $user->office_id != $transfer->destination_branch || $transfer->status !== StatusEnum::SHIPPED) {
+{
+    $user = Auth::user();
+    // Solo Administrador Restaurante puede recibir
+    if (!$user->hasRole('Administrador Restaurante') || $user->office_id != $transfer->destination_branch || $transfer->status !== StatusEnum::SHIPPED) {
         abort(403, 'No autorizado.');
     }
 
-        DB::transaction(function () use ($transfer) {
-            // Crear movimiento de entrada (E) en la oficina destino
-            $inMovement = Movement::create([
-                'office_id' => $transfer->destination_branch,
-                'date_movement' => now(),
-                'type_id' => Type::where('name', 'transferencia_entrada')->first()->id,
-                'user_id' => Auth::id(),
-                'transaction_id' => 'TRF-IN-' . $transfer->id,
-                'description' => 'Entrada por transferencia #' . $transfer->id,
-                'input_type' => 'E',
-                'origin_office_id' => $transfer->originating_branch,
-                'destination_office_id' => $transfer->destination_branch,
-            ]);
+    // Solo actualizamos el estado y la fecha de recepción, sin movimientos ni stock
+    $transfer->update([
+        'receipt_date' => now(),
+        'status' => StatusEnum::RECEIVED,
+    ]);
 
-            foreach ($transfer->details as $detail) {
-                $qty = $detail->quantity_sent;
-                if ($qty > 0) {
-                    $product = $detail->product;
-                    // Si el producto no existe en la oficina destino, se crea o se actualiza stock
-                    $destProduct = Product::firstOrCreate(
-                        ['code' => $product->code, 'office_id' => $transfer->destination_branch],
-                        [
-                            'name' => $product->name,
-                            'category_id' => $product->category_id,
-                            'brand_id' => $product->brand_id,
-                            'stock_minimun' => $product->stock_minimun,
-                            'unit' => $product->unit,
-                            'stock' => 0,
-                        ]
-                    );
-                    $destProduct->increment('stock', $qty);
-
-                    MovementDetail::create([
-                        'movement_id' => $inMovement->id,
-                        'product_id' => $destProduct->id,
-                        'quantity' => $qty,
-                        'unit_price' => 0,
-                        'subtotal' => 0,
-                        'stock_after' => $destProduct->stock,
-                    ]);
-                }
+    // Notificación a administradores (opcional)
+    $admins = User::role('Administrador')->get();
+    foreach ($admins as $admin) {
+        if ($admin->number) {
+            try {
+                $admin->notify(new TransferWhatsappNotification(
+                    $transfer,
+                    'transfer_request_admin',
+                    [(string) $transfer->id, route('transfers.show', $transfer)]
+                ));
+            } catch (\Exception $e) {
+                Log::error('Error al enviar WhatsApp a admin: ' . $e->getMessage());
             }
-
-            $transfer->update([
-                'receipt_date' => now(),
-                'in_movement_id' => $inMovement->id,
-                'status' => StatusEnum::RECEIVED,
-            ]);
-        });
-
-        return redirect()->route('transfers.index')->with('success', 'Transferencia recibida correctamente.');
+        }
+        $admin->notify(new TransferReceived($transfer)); // si creaste esta notificación
     }
+
+    return redirect()->route('transfers.index')->with('success', 'Transferencia recibida correctamente.');
+}
 
     public function reject(Transfer $transfer)
     {

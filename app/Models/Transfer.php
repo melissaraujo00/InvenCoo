@@ -11,7 +11,8 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 class Transfer extends Model
 {
     use AuthorizesRequests;
-
+    const COOPERATIVE_ID = 1;
+    const RESTAURANT_ID = 2;
     protected $fillable = [
         'originating_branch',
         'destination_branch',
@@ -25,7 +26,12 @@ class Transfer extends Model
         'in_movement_id'
     ];
 
-    protected $casts = ['status' => StatusEnum::class];
+    protected $casts = [
+    'status' => StatusEnum::class,
+    'creation_date' => 'datetime',
+    'shipping_date' => 'datetime',
+    'receipt_date' => 'datetime',
+];
 
     public function originatingBranch():BelongsTo
     {

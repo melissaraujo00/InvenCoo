@@ -1,328 +1,40 @@
 <?php
 
-namespace App\Http\Controllers;
-
-use App\Models\Transfer;
-use App\Models\Office;
-use App\Models\Product;
 use App\Models\Movement;
-use App\Models\MovementDetail;
-use App\Models\Type;
+use App\Models\Office;
 use App\Models\User;
-use App\Enums\StatusEnum;
-use App\Models\TransferDetail;
-use App\Notifications\TransferRequested;
-use App\Notifications\TransferApproved;
-use App\Notifications\TransferReadyToShip;
-use App\Notifications\TransferWhatsappNotification;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-class TransferController extends Controller
+return new class extends Migration
 {
-    public function index(Request $request)
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
-        $user = Auth::user();
-        $role = $user->getRoleNames()->first();
-
-        // Administrador: ve todas las transferencias
-        if ($role === 'Administrador') {
-            $transfers = Transfer::with(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product'])
-                ->orderBy('creation_date', 'desc')
-                ->paginate(15);
-            return view('pages.transfers.index', compact('transfers'));
-        }
-
-        // Bodega (Cooperativa): pendientes de envío + historial
-        if ($role === 'Bodega') {
-            $pendingShipments = Transfer::with(['destinationBranch', 'requestingUser', 'details.product'])
-                ->where('originating_branch', $user->office_id) // =1
-                ->whereIn('status', [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED])
-                ->orderBy('creation_date', 'asc')
-                ->get();
-
-            $history = Transfer::with(['destinationBranch', 'requestingUser', 'details.product'])
-                ->where('originating_branch', $user->office_id)
-                ->whereIn('status', [StatusEnum::SHIPPED, StatusEnum::RECEIVED, StatusEnum::REJECTED])
-                ->orderBy('creation_date', 'desc')
-                ->get();
-
-            return view('pages.transfers.bodega_index', compact('pendingShipments', 'history'));
-        }
-
-        // Administrador Restaurante: solo las transferencias donde su oficina es destino
-        $transfers = Transfer::with(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product'])
-            ->where('destination_branch', $user->office_id)
-            ->orderBy('creation_date', 'desc')
-            ->paginate(15);
-
-        return view('pages.transfers.index', compact('transfers'));
-    }
-
-    public function create()
-    {
-        $user = Auth::user();
-        if (!$user->hasRole('Administrador Restaurante')) {
-            abort(403, 'No autorizado.');
-        }
-
-        $sourceOffice = Office::find(Office::find(1)); // Cooperativa
-        $destinationOffice = Office::find($user->office_id);   // Su restaurante
-
-        // Productos globales (sin filtrar por oficina, pero calculamos stock en origen)
-        $products = Product::all();
-        $products->each(function ($product) use ($sourceOffice) {
-            $lastMovementDetail = MovementDetail::where('product_id', $product->id)
-                ->whereHas('movement', function ($query) use ($sourceOffice) {
-                    $query->where('office_id', $sourceOffice->id);
-                })
-                ->orderBy('id', 'desc')
-                ->first();
-
-            $product->available_stock = $lastMovementDetail ? $lastMovementDetail->stock_after : 0;
+        Schema::create('transfers', function (Blueprint $table) {
+            $table->id();
+            $table->foreignIdFor(Office::class, 'originating_branch');
+            $table->foreignIdFor(Office::class, 'destination_branch');
+            $table->foreignIdFor(User::class, 'requesting_user');
+            $table->foreignIdFor(User::class, 'user_authorizes')->nullable();
+            $table->dateTime('creation_date');
+            $table->dateTime('shipping_date')->nullable();
+            $table->dateTime('receipt_date')->nullable();
+            $table->string('status')->default('pending');
+            $table->foreignIdFor(Movement::class, 'out_movement_id')->nullable()->constrained('movements');
+            $table->foreignIdFor(Movement::class, 'in_movement_id')->nullable()->constrained('movements');
+            $table->timestamps();
         });
-
-        return view('pages.transfers.create', compact('sourceOffice', 'destinationOffice', 'products'));
     }
 
-    public function store(Request $request)
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
-        $user = Auth::user();
-        if (!$user->hasRole('Administrador Restaurante')) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'products' => 'required|array|min:1',
-            'products.*.product_id' => 'required|exists:products,id',
-            'products.*.quantity' => 'required|integer|min:1',
-        ]);
-
-        DB::transaction(function () use ($validated, $user) {
-            $transfer = Transfer::create([
-                'originating_branch' => Office::find(1),
-                'destination_branch' => $user->office_id,
-                'requesting_user' => $user->id,
-                'creation_date' => now(),
-                'status' => StatusEnum::PENDING,
-            ]);
-
-            foreach ($validated['products'] as $item) {
-                TransferDetail::create([
-                    'transfer_id' => $transfer->id,
-                    'product_id' => $item['product_id'],
-                    'quantity_requested' => $item['quantity'],
-                    'quantity_sent' => 0,
-                ]);
-            }
-
-            // Notificar a Administradores (Cooperativa)
-            $admins = User::role('Administrador')->get();
-            Notification::send($admins, new TransferRequested($transfer));
-
-            // Notificación WhatsApp a administradores
-            foreach ($admins as $admin) {
-                if ($admin->number) {
-                    $admin->notify(new TransferWhatsappNotification(
-                        $transfer,
-                        'transfer_request_admin',
-                        [(string) $transfer->id, route('transfers.show', $transfer)]
-                    ));
-                }
-            }
-        });
-
-        return redirect()->route('transfers.index')->with('success', 'Solicitud creada. Se ha notificado al administrador.');
+        Schema::dropIfExists('transfers');
     }
-
-    public function show(Transfer $transfer)
-    {
-        $transfer->load(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product']);
-        $user = Auth::user();
-        $canApprove = $user->hasRole('Administrador') && $transfer->status === StatusEnum::PENDING;
-        $canShip = $user->hasRole('Bodega') && $user->office_id == $transfer->originating_branch && in_array($transfer->status, [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED]);
-        $canReceive = ($user->hasRole('Bodega') || $user->hasRole('Administrador Restaurante')) && $user->office_id == $transfer->destination_branch && $transfer->status === StatusEnum::SHIPPED;
-
-        return view('pages.transfers.show', compact('transfer', 'canApprove', 'canShip', 'canReceive'));
-    }
-
-    public function approve(Request $request, Transfer $transfer)
-    {
-        if (!Auth::user()->hasRole('Administrador') || $transfer->status !== StatusEnum::PENDING) {
-            abort(403, 'No autorizado.');
-        }
-
-        $validated = $request->validate([
-            'details' => 'required|array',
-            'details.*.id' => 'required|exists:transfer_details,id',
-            'details.*.quantity_sent' => 'required|integer|min:0',
-        ]);
-
-        DB::transaction(function () use ($transfer, $validated) {
-            $allApproved = true;
-            $anyPartial = false;
-
-            foreach ($validated['details'] as $item) {
-                $detail = TransferDetail::findOrFail($item['id']);
-                $requested = $detail->quantity_requested;
-                $sent = $item['quantity_sent'];
-
-                if ($sent > $requested) {
-                    throw new \Exception('La cantidad enviada no puede superar la solicitada.');
-                }
-                $detail->update(['quantity_sent' => $sent]);
-
-                if ($sent == 0) $allApproved = false;
-                if ($sent > 0 && $sent < $requested) $anyPartial = true;
-            }
-
-            $status = StatusEnum::APPROVED;
-            if (!$allApproved && !$anyPartial) $status = StatusEnum::REJECTED;
-            elseif ($anyPartial) $status = StatusEnum::PARTIALLY_APPROVED;
-
-            $transfer->update([
-                'user_authorizes' => Auth::id(),
-                'status' => $status,
-            ]);
-
-            // Notificar al solicitante
-            $requester = User::find($transfer->requesting_user);
-            if ($requester) {
-                $requester->notify(new TransferApproved($transfer));
-            }
-
-            // Notificar a los bodegas de la oficina origen (Cooperativa)
-            $bodegas = User::role('Bodega')->where('office_id', $transfer->originating_branch)->get();
-            foreach ($bodegas as $bodega) {
-                $bodega->notify(new TransferReadyToShip($transfer));
-                if ($bodega->number) {
-                    $bodega->notify(new TransferWhatsappNotification(
-                        $transfer,
-                        'transfer_ready_for_ship',
-                        [(string) $transfer->id, route('transfers.show', $transfer)]
-                    ));
-                }
-            }
-        });
-
-        return redirect()->route('transfers.show', $transfer)->with('success', 'Transferencia procesada.');
-    }
-
-    public function ship(Transfer $transfer)
-    {
-        $user = Auth::user();
-        if (!$user->hasRole('Bodega') || $user->office_id != $transfer->originating_branch || !in_array($transfer->status, [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED])) {
-            abort(403, 'No autorizado.');
-        }
-
-        DB::transaction(function () use ($transfer) {
-            $outMovement = Movement::create([
-                'office_id' => $transfer->originating_branch,
-                'date_movement' => now(),
-                'type_id' => Type::where('name', 'transferencia_salida')->first()->id,
-                'user_id' => Auth::id(),
-                'transaction_id' => 'TRF-OUT-' . $transfer->id,
-                'description' => 'Salida por transferencia #' . $transfer->id,
-                'input_type' => 'S',
-                'origin_office_id' => $transfer->originating_branch,
-                'destination_office_id' => $transfer->destination_branch,
-            ]);
-
-            foreach ($transfer->details as $detail) {
-                $qty = $detail->quantity_sent;
-                if ($qty > 0) {
-                    $product = $detail->product;
-                    $product->decrement('stock', $qty);
-
-                    MovementDetail::create([
-                        'movement_id' => $outMovement->id,
-                        'product_id' => $detail->product_id,
-                        'quantity' => $qty,
-                        'unit_price' => 0,
-                        'subtotal' => 0,
-                        'stock_after' => $product->stock,
-                    ]);
-                }
-            }
-
-            $transfer->update([
-                'shipping_date' => now(),
-                'out_movement_id' => $outMovement->id,
-                'status' => StatusEnum::SHIPPED,
-            ]);
-        });
-
-        return redirect()->route('transfers.show', $transfer)->with('success', 'Transferencia enviada.');
-    }
-
-    public function receive(Transfer $transfer)
-    {
-        $user = Auth::user();
-        $allowed = ($user->hasRole('Bodega') || $user->hasRole('Administrador Restaurante')) && $user->office_id == $transfer->destination_branch && $transfer->status === StatusEnum::SHIPPED;
-
-        if (!$allowed) {
-            abort(403, 'No autorizado.');
-        }
-
-        DB::transaction(function () use ($transfer) {
-            $inMovement = Movement::create([
-                'office_id' => $transfer->destination_branch,
-                'date_movement' => now(),
-                'type_id' => Type::where('name', 'transferencia_entrada')->first()->id,
-                'user_id' => Auth::id(),
-                'transaction_id' => 'TRF-IN-' . $transfer->id,
-                'description' => 'Entrada por transferencia #' . $transfer->id,
-                'input_type' => 'E',
-                'origin_office_id' => $transfer->originating_branch,
-                'destination_office_id' => $transfer->destination_branch,
-            ]);
-
-            foreach ($transfer->details as $detail) {
-                $qty = $detail->quantity_sent;
-                if ($qty > 0) {
-                    $product = $detail->product;
-                    $destProduct = Product::firstOrCreate(
-                        ['code' => $product->code, 'office_id' => $transfer->destination_branch],
-                        [
-                            'name' => $product->name,
-                            'category_id' => $product->category_id,
-                            'brand_id' => $product->brand_id,
-                            'stock_minimun' => $product->stock_minimun,
-                            'unit' => $product->unit,
-                            'stock' => 0,
-                        ]
-                    );
-                    $destProduct->increment('stock', $qty);
-
-                    MovementDetail::create([
-                        'movement_id' => $inMovement->id,
-                        'product_id' => $destProduct->id,
-                        'quantity' => $qty,
-                        'unit_price' => 0,
-                        'subtotal' => 0,
-                        'stock_after' => $destProduct->stock,
-                    ]);
-                }
-            }
-
-            $transfer->update([
-                'receipt_date' => now(),
-                'in_movement_id' => $inMovement->id,
-                'status' => StatusEnum::RECEIVED,
-            ]);
-        });
-
-        return redirect()->route('transfers.index')->with('success', 'Transferencia recibida correctamente.');
-    }
-
-    public function reject(Transfer $transfer)
-    {
-        if (!Auth::user()->hasRole('Administrador') || $transfer->status !== StatusEnum::PENDING) {
-            abort(403, 'No autorizado.');
-        }
-        $transfer->update(['status' => StatusEnum::REJECTED]);
-        return redirect()->route('transfers.index')->with('error', 'Transferencia rechazada.');
-    }
-}
+};

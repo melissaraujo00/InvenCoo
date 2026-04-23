@@ -1,24 +1,22 @@
-{{-- resources/views/pages/roles/edit.blade.php --}}
 @extends('layouts.app')
 
 @section('content')
-<x-common.page-breadcrumb pageTitle="Editar Rol" />
+<x-common.page-breadcrumb pageTitle="Crear Rol" />
 
 <div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
     <div class="mb-6 flex items-center justify-between">
         <div>
             <h2 class="text-title-md2 font-bold text-gray-800 dark:text-white/90">
-                Editar Rol: {{ $role->name }}
+                Crear Nuevo Rol
             </h2>
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Modifica los permisos y detalles del rol
+                Registra un rol y asigna sus permisos de acceso
             </p>
         </div>
     </div>
 
-    <form action="{{ route('roles.update', $role) }}" method="POST">
+    <form action="{{ route('roles.store') }}" method="POST">
         @csrf
-        @method('PUT')
 
         <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
             {{-- Nombre del Rol --}}
@@ -28,7 +26,7 @@
                 </label>
                 <input type="text"
                        name="name"
-                       value="{{ old('name', $role->name) }}"
+                       value="{{ old('name') }}"
                        required
                        class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                        placeholder="Ej: Administrador">
@@ -71,7 +69,7 @@
                                             <input type="checkbox"
                                                    name="permissions[]"
                                                    value="{{ $permission->name }}"
-                                                   {{ in_array($permission->name, old('permissions', $rolePermissions)) ? 'checked' : '' }}
+                                                   {{ is_array(old('permissions')) && in_array($permission->name, old('permissions')) ? 'checked' : '' }}
                                                    class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-colors dark:border-gray-600 dark:bg-gray-700 dark:checked:bg-blue-500">
                                         </div>
                                         <span class="text-sm text-gray-700 group-hover:text-blue-600 transition-colors dark:text-gray-300 dark:group-hover:text-blue-400">
@@ -93,7 +91,7 @@
                 </a>
                 <button type="submit"
                         class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                    Actualizar Rol
+                    Guardar Rol
                 </button>
             </div>
         </div>

@@ -11,12 +11,12 @@
                 <h2 class="text-title-md2 font-bold text-gray-800 dark:text-white/90">
                     Rol: {{ $role->name }}
                 </h2>
-                <span class="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400 rounded-full">
+                <span class="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400 rounded-full border border-blue-200 dark:border-blue-800">
                     ID: #{{ $role->id }}
                 </span>
             </div>
             <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">
-                Gestiona los permisos asignados a este rol
+                Visualización detallada de accesos y usuarios asignados
             </p>
         </div>
 
@@ -38,96 +38,86 @@
     </div>
 
     {{-- Tarjeta de Información del Rol --}}
-    <x-common.component-card title="Información del Rol" class="mb-6">
+    <x-common.component-card title="Métricas del Rol" class="mb-6">
         <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nombre del Rol</p>
-                    <p class="text-lg font-semibold text-gray-900 dark:text-white mt-1">{{ $role->name }}</p>
-                </div>
-
-                <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Guard</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Guard Base</p>
                     <p class="text-lg font-semibold text-gray-900 dark:text-white mt-1">{{ $role->guard_name }}</p>
                 </div>
 
-                <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuarios Asignados</p>
-                    <p class="text-lg font-semibold text-gray-900 dark:text-white mt-1">{{ $users->total() ?? 0 }}</p>
+                <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuarios Activos</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white mt-1">{{ $users->total() }}</p>
                 </div>
 
-                <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha Creación</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">{{ $role->created_at->format('d/m/Y H:i') }}</p>
-                </div>
-
-                <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última Actualización</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">{{ $role->updated_at->format('d/m/Y H:i') }}</p>
-                </div>
-
-                <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
                     <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Permisos</p>
                     <p class="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-1">{{ $role->permissions->count() }}</p>
+                </div>
+
+                <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última Actualización</p>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white mt-1">{{ $role->updated_at->format('d/m/Y H:i') }}</p>
                 </div>
             </div>
         </div>
     </x-common.component-card>
 
     {{-- Tarjeta de Permisos del Rol --}}
-    <x-common.component-card title="Permisos Asignados al Rol" class="mb-6">
+    <x-common.component-card title="Esquema de Autorización" class="mb-6">
         <div class="p-6">
-            {{-- Agrupación de permisos por módulo --}}
             @php
-                $permissionsByModule = $role->permissions->groupBy(function($permission) {
-                    $parts = explode('.', $permission->name);
-                    return $parts[0] ?? 'general';
+                $groupedPermissions = $role->permissions->groupBy(function($p) {
+                    $name = strtolower($p->name);
+                    if(str_contains($name, 'usuario')) return 'Gestión de Usuarios';
+                    if(str_contains($name, 'rol') || str_contains($name, 'permiso')) return 'Roles y Permisos';
+                    if(str_contains($name, 'categor')) return 'Categorías';
+                    if(str_contains($name, 'marca')) return 'Marcas';
+                    if(str_contains($name, 'producto') || str_contains($name, 'inventario')) return 'Productos e Inventario';
+                    if(str_contains($name, 'movimiento')) return 'Movimientos';
+                    if(str_contains($name, 'proveedor')) return 'Proveedores';
+                    return 'Otros Permisos';
                 });
             @endphp
 
-            @forelse($permissionsByModule as $module => $permissions)
-                <div class="mb-6 last:mb-0">
-                    <div class="flex items-center mb-3">
-                        <h4 class="text-base font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                            {{ ucfirst($module) }}
-                        </h4>
-                        <span class="ml-3 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full">
-                            {{ $permissions->count() }} permisos
-                        </span>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        @foreach($permissions as $permission)
-                            <div class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-800">
-                                <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $permission->name }}</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">ID: {{ $permission->id }}</p>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @empty
+            @if($groupedPermissions->isEmpty())
                 <div class="text-center py-12">
                     <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p class="text-gray-500 dark:text-gray-400 text-lg">Este rol no tiene permisos asignados</p>
-                    <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Asigna permisos desde la edición del rol</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-lg">Este rol no tiene permisos de sistema</p>
                 </div>
-            @endforelse
+            @else
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                    @foreach($groupedPermissions as $group => $permisos)
+                        <div class="rounded-lg border border-gray-200 p-5 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-800/50">
+                            <h4 class="mb-4 text-sm font-semibold text-gray-800 border-b border-gray-200 pb-2 dark:text-white dark:border-gray-600">
+                                {{ $group }}
+                            </h4>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($permisos as $permission)
+                                    <span class="inline-flex items-center rounded bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 border border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-800/50">
+                                        <svg class="mr-1.5 h-3 w-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        {{ ucfirst($permission->name) }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
     </x-common.component-card>
 
     {{-- Tarjeta de Usuarios con este Rol --}}
     @if($users->count() > 0)
-    <x-common.component-card title="Usuarios con este Rol" class="mb-6">
+    <x-common.component-card title="Directorio de Usuarios Asignados" class="mb-6">
         <div class="p-6">
             <x-tables.table
-                :headers="['Usuario', 'Correo', 'Oficina', 'Estado']"
+                :headers="['Usuario', 'Correo', 'Oficina', 'Estado', 'Acciones']"
                 :paginator="$users"
                 :searchable="false"
             >
@@ -155,13 +145,10 @@
                         <x-tables.status-badge :status="$user->status" />
                     </td>
 
-                    <td class="px-4 py-4 whitespace-nowrap">
-                        <div class="flex justify-end">
-                            <a href="{{ route('users.edit', $user) }}"
-                               class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium">
-                                Ver Usuario
-                            </a>
-                        </div>
+                    <td class="px-4 py-4 whitespace-nowrap text-right">
+                        <a href="{{ route('users.edit', $user) }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium">
+                            Ver Perfil
+                        </a>
                     </td>
                 </tr>
                 @endforeach

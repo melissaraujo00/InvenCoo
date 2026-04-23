@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\Can;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -46,10 +47,21 @@ class RoleController extends Controller
             ->with('success', 'Rol creado exitosamente.');
     }
 
+    public function show(Role $role)
+    {
+        // Cargamos permisos
+        $role->load('permissions');
+        
+        // Cargamos los usuarios que tienen este rol específico (con paginación)
+        $users = \App\Models\User::role($role->name)->with('office')->paginate(10);
+        
+        return view('pages.roles.show', compact('role', 'users'));
+    }
+
     public function edit(Role $role)
     {
         $permissions = Permission::all();
-        $rolePermissions = $role->permissions->pluck('id')->toArray();
+        $rolePermissions = $role->permissions->pluck('name')->toArray();
 
         return view('pages.roles.edit', compact('role', 'permissions', 'rolePermissions'));
     }
@@ -58,14 +70,14 @@ class RoleController extends Controller
     {
         $request->validate([
             'name' => 'required|unique:roles,name,' . $role->id,
-            'permissions' => 'array'
+            'permissions' => 'array|nullable' // Asegura que pueda ser nulo
         ]);
 
         $role->update(['name' => $request->name]);
 
-        if ($request->has('permissions')) {
-            $role->syncPermissions($request->permissions);
-        }
+        // Si hay permisos, los sincroniza. Si el arreglo está vacío o no viene, limpia los permisos.
+        $permisos = $request->input('permissions', []);
+        $role->syncPermissions($permisos);
 
         return redirect()->route('roles.index')
             ->with('success', 'Rol actualizado exitosamente.');
@@ -73,12 +85,19 @@ class RoleController extends Controller
 
     public function destroy(Role $role)
     {
-        // Evitar eliminar roles importantes
+        // 1. Proteger roles críticos del sistema
         if (in_array($role->name, ['Administrador', 'Admin'])) {
             return redirect()->route('roles.index')
-                ->with('error', 'No se puede eliminar este rol.');
+                ->with('error', 'No se puede eliminar un rol base del sistema.');
         }
 
+        // 2. NUEVA REGLA: Prevenir la eliminación de roles en uso
+        if ($role->users()->count() > 0) {
+            return redirect()->route('roles.index')
+                ->with('error', 'Acción denegada: Hay usuarios que actualmente tienen asignado este rol. Reasigna a los usuarios antes de eliminarlo.');
+        }
+
+        // 3. Eliminación segura
         $role->delete();
         return redirect()->route('roles.index')
             ->with('success', 'Rol eliminado exitosamente.');

@@ -58,6 +58,7 @@ class MenuHelper
 
     private static function filterMenu($items)
     {
+        /** @var \App\Models\User|null $user*/
         $user = Auth::user();
 
         if (!$user) {

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "971f6bba537c9ea2b932107fe2ea6731",
+    "content-hash": "4f78c02936a688653c105e73b3a6ab50",
     "packages": [
         {
             "name": "brick/math",
@@ -3956,33 +3956,33 @@
         },
         {
             "name": "spatie/laravel-permission",
-            "version": "7.1.0",
+            "version": "7.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-permission.git",
-                "reference": "34bf23c9e541a5434e0898c7172fb6647d23889d"
+                "reference": "5272955119759cd217e84e8bbac19443c305ebc3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-permission/zipball/34bf23c9e541a5434e0898c7172fb6647d23889d",
-                "reference": "34bf23c9e541a5434e0898c7172fb6647d23889d",
+                "url": "https://api.github.com/repos/spatie/laravel-permission/zipball/5272955119759cd217e84e8bbac19443c305ebc3",
+                "reference": "5272955119759cd217e84e8bbac19443c305ebc3",
                 "shasum": ""
             },
             "require": {
-                "illuminate/auth": "^12.0",
-                "illuminate/container": "^12.0",
-                "illuminate/contracts": "^12.0",
-                "illuminate/database": "^12.0",
+                "illuminate/auth": "^12.0|^13.0",
+                "illuminate/container": "^12.0|^13.0",
+                "illuminate/contracts": "^12.0|^13.0",
+                "illuminate/database": "^12.0|^13.0",
                 "php": "^8.3",
                 "spatie/laravel-package-tools": "^1.0"
             },
             "require-dev": {
                 "larastan/larastan": "^3.9",
-                "laravel/passport": "^12.0",
+                "laravel/passport": "^13.0",
                 "laravel/pint": "^1.0",
-                "orchestra/testbench": "^10.0",
-                "pestphp/pest": "^3.0",
-                "pestphp/pest-plugin-laravel": "^3.0",
+                "orchestra/testbench": "^10.0|^11.0",
+                "pestphp/pest": "^3.0|^4.0",
+                "pestphp/pest-plugin-laravel": "^3.0|^4.1",
                 "phpstan/phpstan": "^2.1"
             },
             "type": "library",
@@ -4031,7 +4031,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-permission/issues",
-                "source": "https://github.com/spatie/laravel-permission/tree/7.1.0"
+                "source": "https://github.com/spatie/laravel-permission/tree/7.3.0"
             },
             "funding": [
                 {
@@ -4039,7 +4039,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-02-14T17:17:28+00:00"
+            "time": "2026-04-07T15:19:42+00:00"
         },
         {
             "name": "spatie/php-structure-discoverer",

@@ -120,6 +120,38 @@
 
     </div>
 
+    {{-- Sistema Global de Notificaciones (Toasts) --}}
+    <div class="fixed bottom-6 right-6 z-[99999] flex flex-col gap-3 w-full max-w-sm pointer-events-none" 
+         x-data="{ show: true }" 
+         x-init="setTimeout(() => show = false, 5000)">
+        
+        @if(session('success'))
+            <div x-show="show" 
+                 class="pointer-events-auto"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 translate-y-4">
+                <x-ui.alert variant="success" title="¡Éxito!" :message="session('success')" />
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div x-show="show" 
+                 class="pointer-events-auto"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 translate-y-4">
+                <x-ui.alert variant="error" title="Atención" :message="session('error')" />
+            </div>
+        @endif
+    </div>
+
 </body>
 
     <!-- Apply dark mode immediately to prevent flash -->

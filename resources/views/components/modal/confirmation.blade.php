@@ -63,7 +63,7 @@ $iconData = $iconConfig[$icon] ?? $iconConfig['warning'];
     {{-- Modal --}}
     <div x-show="open"
          x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto"
+         class="fixed inset-0 z-50 overflow-y-auto whitespace-normal text-left"
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"
@@ -92,7 +92,7 @@ $iconData = $iconConfig[$icon] ?? $iconConfig['warning'];
                         </div>
 
                         {{-- Texto --}}
-                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1 min-w-0">
                             <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
                                 {{ $title }}
                             </h3>

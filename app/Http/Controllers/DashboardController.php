@@ -8,6 +8,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        return view('pages.dashboard');
+        // Añadimos el título para que el layout de app lo detecte
+        return view('pages.dashboard.ecommerce', ['title' => 'Inicio | InvenCoo']);
     }
 }

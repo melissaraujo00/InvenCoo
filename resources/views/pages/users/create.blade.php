@@ -80,25 +80,31 @@
                             />
                         </x-form.group>
 
-                        {{-- Oficina --}}
-                        <x-form.group name="office_id" label="Oficina Asignada" :required="true">
-                            <x-form.select
-                                name="office_id"
-                                :options="$offices->pluck('name', 'id')"
-                                :value="old('office_id')"
-                                placeholder="Seleccionar oficina"
-                                searchable
-                            />
-                        </x-form.group>
+                        {{-- Oficina (Z-Index alto para desplegable) --}}
+                        <div class="relative z-20">
+                            <x-form.group name="office_id" label="Oficina Asignada" :required="true">
+                                <x-form.select
+                                    name="office_id"
+                                    :options="$offices->pluck('name', 'id')"
+                                    :value="old('office_id')"
+                                    placeholder="Seleccionar oficina"
+                                    searchable
+                                />
+                            </x-form.group>
+                        </div>
 
-                        {{-- Estado (toggle) --}}
-                        <x-form.group name="status" label="Estado inicial">
-                            <x-form.toggle
-                                name="status"
-                                label="Activar usuario inmediatamente"
-                                :checked="old('status', true)"
-                            />
-                        </x-form.group>
+                        {{-- Estado (Z-Index bajo, pero con searchable para diseño Alpine) --}}
+                        <div class="relative z-10">
+                            <x-form.group name="status" label="Estado inicial" :required="true">
+                                <x-form.select
+                                    name="status"
+                                    :options="['1' => 'Activo', '0' => 'Inactivo']"
+                                    :value="old('status', '1')"
+                                    placeholder="Seleccionar estado"
+                                    searchable
+                                />
+                            </x-form.group>
+                        </div>
                     </div>
                 </div>
 
@@ -163,7 +169,7 @@
                     {{-- Barra de fortaleza de contraseña --}}
                     <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                         <p class="text-xs text-gray-500 dark:text-gray-400">
-                            <span class="font-semibold">Requisitos de seguridad:</span> La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y caracteres especiales para máxima seguridad.
+                            <span class="font-semibold">Requisitos de seguridad:</span> La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas y números para máxima seguridad.
                         </p>
                     </div>
                 </div>

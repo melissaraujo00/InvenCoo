@@ -17,8 +17,8 @@
 
         <div class="flex gap-3">
             {{-- Badge de estado --}}
-            <div class="flex items-center px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <span class="text-sm text-gray-600 dark:text-gray-400 mr-2">Estado actual:</span>
+            <div class="flex items-center px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400 mr-2">Estado actual:</span>
                 <x-tables.status-badge :status="$user->status" />
             </div>
 
@@ -49,7 +49,7 @@
                                 name="name"
                                 placeholder="Ej. Juan Carlos"
                                 :required="true"
-                                :value="$user->name"
+                                :value="old('name', $user->name)"
                             />
                         </x-form.group>
 
@@ -60,7 +60,7 @@
                                 type="email"
                                 placeholder="ejemplo@correo.com"
                                 :required="true"
-                                :value="$user->email"
+                                :value="old('email', $user->email)"
                             />
                             @if($user->email_verified_at)
                                 <p class="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center">
@@ -78,7 +78,7 @@
                                 name="number"
                                 placeholder="0412-1234567"
                                 :required="true"
-                                :value="$user->number"
+                                :value="old('number', $user->number)"
                             />
                         </x-form.group>
                     </div>
@@ -91,32 +91,38 @@
                                 name="last_name"
                                 placeholder="Ej. Pérez Martínez"
                                 :required="true"
-                                :value="$user->last_name"
+                                :value="old('last_name', $user->last_name)"
                             />
                         </x-form.group>
 
-                        {{-- Oficina --}}
-                        <x-form.group name="office_id" label="Oficina Asignada" :required="true">
-                            <x-form.select
-                                name="office_id"
-                                :options="$offices->pluck('name', 'id')"
-                                :value="$user->office_id"
-                                placeholder="Seleccionar oficina"
-                            />
-                        </x-form.group>
+                        {{-- Oficina (Z-Index alto para desplegable) --}}
+                        <div class="relative z-20">
+                            <x-form.group name="office_id" label="Oficina Asignada" :required="true">
+                                <x-form.select
+                                    name="office_id"
+                                    :options="$offices->pluck('name', 'id')"
+                                    :value="old('office_id', $user->office_id)"
+                                    placeholder="Seleccionar oficina"
+                                    searchable
+                                />
+                            </x-form.group>
+                        </div>
 
-                        {{-- Estado --}}
-                        <x-form.group name="status" label="Estado del Usuario">
-                            <x-form.select
-                                name="status"
-                                :options="['1' => 'Activo', '0' => 'Inactivo']"
-                                :value="$user->status"
-                                placeholder="Seleccionar estado"
-                            />
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Los usuarios inactivos no pueden acceder al sistema
-                            </p>
-                        </x-form.group>
+                        {{-- Estado (Z-Index bajo, pero con searchable para diseño Alpine) --}}
+                        <div class="relative z-10">
+                            <x-form.group name="status" label="Estado del Usuario" :required="true">
+                                <x-form.select
+                                    name="status"
+                                    :options="['1' => 'Activo', '0' => 'Inactivo']"
+                                    :value="old('status', $user->status)"
+                                    placeholder="Seleccionar estado"
+                                    searchable
+                                />
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Los usuarios inactivos no pueden acceder al sistema
+                                </p>
+                            </x-form.group>
+                        </div>
                     </div>
                 </div>
 
@@ -197,14 +203,14 @@
         <x-common.component-card title="Información de Auditoría" class="mb-6">
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
                         <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha de creación</p>
                         <p class="text-sm font-medium text-gray-800 dark:text-white/90 mt-1">
                             {{ $user->created_at->format('d/m/Y H:i') }}
                         </p>
                     </div>
 
-                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
                         <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Última actualización</p>
                         <p class="text-sm font-medium text-gray-800 dark:text-white/90 mt-1">
                             {{ $user->updated_at->format('d/m/Y H:i') }}
@@ -212,14 +218,14 @@
                     </div>
 
                     @if($user->email_verified_at)
-                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
                         <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email verificado</p>
                         <p class="text-sm font-medium text-green-600 dark:text-green-400 mt-1">
                             {{ $user->email_verified_at->format('d/m/Y H:i') }}
                         </p>
                     </div>
                     @else
-                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
                         <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email verificado</p>
                         <p class="text-sm font-medium text-yellow-600 dark:text-yellow-400 mt-1">
                             Pendiente de verificación

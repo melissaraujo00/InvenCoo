@@ -7,9 +7,9 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -19,7 +19,8 @@ class UserController extends Controller
             ->when($request->filled('search'), fn($query) =>
                 $query->whereAny(['name', 'last_name', 'email', 'number'], 'LIKE', "%{$request->search}%")
             )
-            ->paginate(10);
+            // Agregamos withQueryString() para que la paginación no pierda la búsqueda
+            ->paginate(10)->withQueryString();
 
         return view('pages.users.index', compact('users'));
     }
@@ -38,9 +39,10 @@ class UserController extends Controller
         $data['password'] = Hash::make($data['password']);
 
         $user = User::create($data);
+        
+        // Optimización: syncRoles acepta IDs nativamente, no necesitamos consultar los nombres
         if ($request->has('roles') && !empty($request->roles)) {
-            $roleNames = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
-            $user->syncRoles($roleNames);
+            $user->syncRoles(array_map('intval', $request->roles));
         }
 
         return redirect()->route('users.index')->with('success', 'Usuario creado exitosamente.');
@@ -67,9 +69,9 @@ class UserController extends Controller
 
         $user->update($data);
 
+        // Optimización: syncRoles directo con IDs
         if ($request->has('roles') && !empty($request->roles)) {
-            $roleNames = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
-            $user->syncRoles($roleNames);
+            $user->syncRoles(array_map('intval', $request->roles));
         } else {
             $user->syncRoles([]);
         }
@@ -80,6 +82,12 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        // 1. Bloqueo estricto de seguridad: Prevenir auto-eliminación
+        if ($user->id === Auth::id()) {
+            return redirect()->route('users.index')
+                ->with('error', 'Por razones de seguridad, no puedes eliminar tu propia cuenta.');
+        }
+
         $user->delete();
         return redirect()->route('users.index')
             ->with('success', 'Usuario eliminado correctamente.');

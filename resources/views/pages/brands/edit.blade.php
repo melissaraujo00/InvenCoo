@@ -26,7 +26,7 @@
             @csrf
             @method('PUT')
 
-            <x-common.component-card title="" class="mb-1">
+            <x-common.component-card title="Detalles de la Marca" class="mb-6">
                 <div class="p-1">
 
                     <div class="flex flex-col md:flex-row gap-4">

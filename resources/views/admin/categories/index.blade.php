@@ -42,9 +42,9 @@
                         </span>
                     </td>
 
-                    {{-- Descripción --}}
-                    <td class="px-4 py-4">
-                        <span class="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
+                    {{-- Descripción (Truncada para evitar scroll horizontal) --}}
+                    <td class="px-4 py-4 max-w-[200px] sm:max-w-xs md:max-w-sm lg:max-w-md">
+                        <span class="block text-sm text-gray-600 dark:text-gray-400 truncate" title="{{ $category->description }}">
                             {{ $category->description ?? 'Sin descripción' }}
                         </span>
                     </td>

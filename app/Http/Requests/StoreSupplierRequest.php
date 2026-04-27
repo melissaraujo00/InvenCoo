@@ -25,9 +25,9 @@ class StoreSupplierRequest extends FormRequest
             'company_name' => [
                 'required',
                 'string',
-                'min:5',
-                'max:50',
-                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
+                'min:2',
+                'max:75',
+                'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-\.\&\']+$/',
                 'unique:suppliers,company_name'
             ],
             'contact_name' => [
@@ -35,14 +35,14 @@ class StoreSupplierRequest extends FormRequest
                 'string',
                 'min:3',
                 'max:75',
-                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/'
+                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\.\']+$/'
             ],
             'number_phone' => [
                 'required',
                 'string',
                 'min:8',
-                'max:15',
-                'regex:/^[0-9+\-\s]+$/'
+                'max:20',
+                'regex:/^[0-9+\-\s()]+$/' 
             ],
             'description' => [
                 'nullable',

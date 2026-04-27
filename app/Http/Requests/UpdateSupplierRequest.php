@@ -26,10 +26,9 @@ class UpdateSupplierRequest extends FormRequest
             'company_name' => [
                 'required',
                 'string',
-                'min:5',
-                'max:50',
-                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
-                // 👇 UNIQUE que ignora el ID actual
+                'min:2',
+                'max:75',
+                'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-\.\&\']+$/',
                 Rule::unique('suppliers', 'company_name')->ignore($this->route('supplier'))
             ],
             'contact_name' => [
@@ -37,20 +36,20 @@ class UpdateSupplierRequest extends FormRequest
                 'string',
                 'min:3',
                 'max:75',
-                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/'
+                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\.\']+$/' 
             ],
             'number_phone' => [
                 'required',
                 'string',
-                'min:7',
-                'max:20',
-                'regex:/^[0-9+\-\s]+$/'
+                'min:8',
+                'max:20', 
+                'regex:/^[0-9+\-\s()]+$/' 
             ],
             'description' => [
                 'nullable',
                 'string',
                 'max:255',
-                'min:5'
+                'min:5'                               
             ]
         ];
     }

@@ -27,9 +27,9 @@ class UpdateCategoryRequest extends FormRequest
                 'required',
                 'string',
                 'max:50',
-                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
+                'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-\.]+$/', 
                 Rule::unique('categories')->ignore($this->route('category')),
-                'min:5'
+                'min:3'
             ],
             'description' => [
                 'nullable',
@@ -51,13 +51,13 @@ class UpdateCategoryRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'La categoria es obligatoria',
-            'name.max' => 'La categoria debe de ser maximo 50 caracteres',
-            'name.regex' => 'La categoria no debe de tener numeros',
-            'name.unique'=> 'El nombre de la categoria ya esta en uso',
-            'name.min' => 'El minimo de caracter son 5',
-
-            'description.max' => 'La descripcion debe de tenero un maximo de 255 caracteres'
+            'name.required' => 'El nombre de la categoría es obligatorio.',
+            'name.max' => 'La categoría no debe exceder los 50 caracteres.',
+            'name.regex' => 'La categoría contiene caracteres no permitidos (se permiten letras, números, guiones y puntos).',
+            'name.unique'=> 'El nombre de esta categoría ya está en uso.',
+            'name.min' => 'El nombre debe tener al menos 3 caracteres.',
+            'description.max' => 'La descripción no debe exceder los 255 caracteres.',
+            'description.min' => 'La descripción debe tener al menos 5 caracteres.',
         ];
     }
 }

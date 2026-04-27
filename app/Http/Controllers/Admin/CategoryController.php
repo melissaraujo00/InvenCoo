@@ -17,9 +17,9 @@ class CategoryController extends Controller
     {
         $categories = Category::select('id', 'name', 'description')
                     ->when($request->filled('search'), fn($query) =>
-                    $query->where('name', 'LIKE', "%{$request->search}%")
+                        $query->where('name', 'LIKE', "%{$request->search}%")
                     )
-                    ->paginate(20);
+                    ->paginate(20)->withQueryString();
 
         return view('admin.categories.index', compact('categories'));
     }
@@ -75,9 +75,17 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category)
     {
-        $category->delete();
-
-        return to_route('categories.index')
-            ->with('success', 'Categoría eliminada exitosamente.');
+        try {
+            $category->delete();
+            return to_route('categories.index')
+                ->with('success', 'Categoría eliminada exitosamente.');
+                
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == "23000") {
+                return to_route('categories.index')
+                    ->with('error', 'No puedes eliminar esta categoría porque ya tiene productos asignados.');
+            }
+            throw $e;
+        }
     }
 }

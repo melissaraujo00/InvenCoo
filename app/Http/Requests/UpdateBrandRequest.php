@@ -26,11 +26,10 @@ class UpdateBrandRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'min:5',
+                'min:2',
                 'max:50',
-                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
+                'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-\.\']+$/',
                 Rule::unique('brands')->ignore($this->route('brand')),
-
             ],
             'description' => [
                 'nullable',
@@ -48,17 +47,17 @@ class UpdateBrandRequest extends FormRequest
             'description' => 'descripción'
         ];
     }
+
     public function messages(): array
     {
         return [
-            'name.required' => 'La marca es obligatoria',
-            'name.max' => 'La marca debe de ser maximo 50 caracteres',
-            'name.regex' => 'La marca no debe de tener numeros',
-            'name.unique'=> 'El nombre de la marca ya esta en uso',
-            'name.min' => 'El minimo de caracter son 5',
-
-            'description.max' => 'La descripcion debe de tenero un maximo de 255 caracteres',
-            'description.min' => 'El minimo de caracteres son de 5'
+            'name.required' => 'El nombre de la marca es obligatorio.',
+            'name.max' => 'La marca no debe exceder los 50 caracteres.',
+            'name.regex' => 'La marca contiene caracteres no permitidos.',
+            'name.unique'=> 'Esta marca ya se encuentra registrada.',
+            'name.min' => 'El nombre debe tener al menos 2 caracteres.',
+            'description.max' => 'La descripción no debe exceder los 255 caracteres.',
+            'description.min' => 'La descripción debe tener al menos 5 caracteres.'
         ];
     }
 }

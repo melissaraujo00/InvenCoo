@@ -64,7 +64,7 @@
                     {{-- Stock --}}
                     <td class="px-4 py-4 whitespace-nowrap">
                         @if($product->stock <= $product->stock_minimun)
-                            <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/20 dark:text-red-400 font-bold">
+                            <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs text-red-800 dark:bg-red-900/20 dark:text-red-400 font-bold">
                                 {{ $product->stock }}
                             </span>
                         @else

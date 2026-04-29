@@ -15,12 +15,12 @@ class StoreProductRequest extends FormRequest
     {
         return [
             //'code'                => 'required|string|max:50|unique:products,code',
-            'name'                => 'required|string|max:50|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
+            'name'                => 'required|string|max:100|regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-\.\/]+$/',
             'category_id'         => 'required|exists:categories,id',
             'brand_id'            => 'nullable|exists:brands,id',
             'stock'               => 'required|integer|min:0',
             'stock_minimun'       => 'required|integer|min:0',
-            'unit'                => 'required|string|max:50|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
+            'unit'                => 'required|string|max:20|regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]+$/',
             'suppliers'           => 'nullable|array',
             'suppliers.*.id'      => 'required|exists:suppliers,id',
             'suppliers.*.price'   => 'required|numeric|min:0',

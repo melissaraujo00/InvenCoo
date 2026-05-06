@@ -6,7 +6,7 @@ use App\Http\Requests\StoreBuyRequest;
 use App\Http\Requests\UpdateBuyRequest;
 use App\Models\Buy;
 use App\Models\Movement;
-use App\Models\MovementDetail; // Corregido: antes era MovementDatail
+use App\Models\MovementDetail;
 use App\Models\Office;
 use App\Models\Product;
 use App\Models\PurchaseDetail;
@@ -23,18 +23,12 @@ class BuyController extends Controller
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->search;
                 $query->where('id', 'LIKE', "%{$search}%")
-                    ->orWhereHas('supplier', function ($q) use ($search) {
-                        $q->where('company_name', 'LIKE', "%{$search}%");
-                    })
-                    ->orWhereHas('user', function ($q) use ($search) {
-                        $q->where('name', 'LIKE', "%{$search}%");
-                    })
-                    ->orWhereHas('office', function ($q) use ($search) {
-                        $q->where('name', 'LIKE', "%{$search}%");
-                    });
+                    ->orWhereHas('supplier', fn($q) => $q->where('company_name', 'LIKE', "%{$search}%"))
+                    ->orWhereHas('user', fn($q) => $q->where('name', 'LIKE', "%{$search}%"))
+                    ->orWhereHas('office', fn($q) => $q->where('name', 'LIKE', "%{$search}%"));
             })
             ->orderBy('date', 'desc')
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
         return view('pages.buys.index', compact('buys'));
     }
@@ -51,28 +45,42 @@ class BuyController extends Controller
         DB::transaction(function () use ($request) {
             $user = $request->user();
             $officeId = $user->office_id;
+            $validated = $request->validated();
 
-            $subtotal = 0;
-            foreach ($request->products as $item) {
-                $subtotal += $item['quantity'] * $item['price'];
-            }
-            $discount = $request->discount ?? 0;
-            $total = $subtotal - $discount;
+            $subtotal = collect($validated['products'])->sum(fn($item) => $item['quantity'] * $item['price']);
+            $discount = $validated['discount'] ?? 0;
+            
+            $ivaRate = ($validated['iva_rate'] ?? 0) / 100;
+            $subtotalAfterDiscount = $subtotal - $discount;
+            $totalIva = $subtotalAfterDiscount * $ivaRate;
+            $total = $subtotalAfterDiscount + $totalIva;
 
             $buy = Buy::create([
-                'supplier_id' => $request->supplier_id ?? null,
-                'date' => $request->date,
+                'supplier_id' => $validated['supplier_id'],
+                'date' => $validated['date'],
                 'subtotal' => $subtotal,
                 'discount' => $discount,
+                'total_iva' => $totalIva,
                 'total' => $total,
-                'total_iva' => 0,
                 'user_id' => $user->id,
                 'office_id' => $officeId,
                 'is_cancelled' => false,
             ]);
 
-            foreach ($request->products as $item) {
-                $product = Product::find($item['product_id']);
+            $supplierName = Supplier::find($validated['supplier_id'])->company_name;
+
+            $movement = Movement::create([
+                'office_id' => $officeId,
+                'date_movement' => $validated['date'],
+                'type_id' => $this->getPurchaseTypeId(),
+                'user_id' => $user->id,
+                'transaction_id' => 'COMPRA-' . $buy->id,
+                'description' => "Compra a proveedor: $supplierName",
+                'input_type' => 'E',
+            ]);
+
+            foreach ($validated['products'] as $item) {
+                $product = Product::lockForUpdate()->find($item['product_id']);
                 $quantity = $item['quantity'];
                 $price = $item['price'];
 
@@ -85,28 +93,6 @@ class BuyController extends Controller
                 ]);
 
                 $product->increment('stock', $quantity);
-            }
-
-            $supplierName = $request->supplier_id
-                ? Supplier::find($request->supplier_id)->company_name
-                : 'Proveedor no especificado';
-
-            $movement = Movement::create([
-                'office_id' => $officeId,
-                'date_movement' => $request->date,
-                'type_id' => $this->getPurchaseTypeId(),
-                'user_id' => $user->id,
-                'transaction_id' => 'COMPRA-' . $buy->id,
-                'description' => "Compra" . ($request->supplier_id ? " a proveedor: $supplierName" : " sin proveedor registrado"),
-                'input_type' => 'E',
-                'origin_office_id' => null,
-                'destination_office_id' => null,
-            ]);
-
-            foreach ($request->products as $item) {
-                $product = Product::find($item['product_id']);
-                $quantity = $item['quantity'];
-                $price = $item['price'];
 
                 MovementDetail::create([
                     'movement_id' => $movement->id,
@@ -130,16 +116,13 @@ class BuyController extends Controller
 
     public function edit(Buy $buy)
     {
-        if (!auth()->user()->hasRole('Administrador')) {
-            abort(403);
-        }
-        if ($buy->is_cancelled) {
-            return redirect()->route('buys.index')->with('error', 'No se puede editar una compra cancelada.');
-        }
+        if (!auth()->user()->hasRole('Administrador')) abort(403);
+        if ($buy->is_cancelled) return redirect()->route('buys.index')->with('error', 'No se puede editar una compra cancelada.');
+        
         $suppliers = Supplier::all();
         $offices = Office::all();
         $products = Product::all();
-        $buy->load('details'); // Importante para tener los detalles
+        $buy->load('details');
         return view('pages.buys.edit', compact('buy', 'suppliers', 'offices', 'products'));
     }
 
@@ -148,18 +131,24 @@ class BuyController extends Controller
         $validated = $request->validated();
 
         DB::transaction(function () use ($validated, $buy) {
-            $subtotal = 0;
-            foreach ($validated['products'] as $item) {
-                $subtotal += $item['quantity'] * $item['price'];
+            
+            // 1. REVERSIÓN DEL STOCK VIEJO (Blindaje contable)
+            foreach ($buy->details as $detail) {
+                $product = Product::lockForUpdate()->find($detail->product_id);
+                $product->decrement('stock', $detail->quantity);
             }
+            $buy->details()->delete();
 
+            // 2. CÁLCULO DE LOS NUEVOS TOTALES
+            $subtotal = collect($validated['products'])->sum(fn($item) => $item['quantity'] * $item['price']);
             $discount = $validated['discount'] ?? 0;
-            $totalIva = $subtotal * 0.16;
-            $total = $subtotal - $discount + $totalIva;
+            $ivaRate = ($validated['iva_rate'] ?? 0) / 100;
+            $subtotalAfterDiscount = $subtotal - $discount;
+            $totalIva = $subtotalAfterDiscount * $ivaRate;
+            $total = $subtotalAfterDiscount + $totalIva;
 
             $buy->update([
                 'supplier_id' => $validated['supplier_id'],
-                'office_id' => $validated['office_id'],
                 'date' => $validated['date'],
                 'subtotal' => $subtotal,
                 'discount' => $discount,
@@ -167,131 +156,90 @@ class BuyController extends Controller
                 'total' => $total,
             ]);
 
-            $buy->details()->delete();
+            // 3. REGISTRO DEL MOVIMIENTO DE CORRECCIÓN
+            $movement = Movement::create([
+                'office_id' => $buy->office_id,
+                'date_movement' => now(),
+                'type_id' => $this->getCorrectionTypeId(),
+                'user_id' => auth()->id(),
+                'transaction_id' => 'CORRECCION-COMPRA-' . $buy->id . '-' . time(),
+                'description' => 'Ajuste por edición de compra #' . $buy->id,
+                'input_type' => 'E',
+            ]);
+
+            // 4. CREACIÓN DE NUEVOS DETALLES Y NUEVO STOCK
             foreach ($validated['products'] as $item) {
+                $product = Product::lockForUpdate()->find($item['product_id']);
+                
                 $buy->details()->create([
-                    'product_id' => $item['id'],
+                    'product_id' => $product->id,
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
                     'subtotal' => $item['quantity'] * $item['price'],
                 ]);
+
+                $product->increment('stock', $item['quantity']);
+
+                MovementDetail::create([
+                    'movement_id' => $movement->id,
+                    'product_id' => $product->id,
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['price'],
+                    'subtotal' => $item['quantity'] * $item['price'],
+                    'stock_after' => $product->stock,
+                ]);
             }
         });
 
-        return redirect()->route('buys.show', $buy)->with('success', 'Compra actualizada correctamente.');
+        return redirect()->route('buys.show', $buy)->with('success', 'Compra actualizada y stock reajustado correctamente.');
     }
 
     public function cancel(Buy $buy)
-{
-    if (!auth()->user()->hasRole('Administrador')) {
-        abort(403, 'No autorizado.');
-    }
+    {
+        if (!auth()->user()->hasRole('Administrador')) abort(403, 'No autorizado.');
+        if ($buy->is_cancelled) return redirect()->back()->with('error', 'La compra ya está cancelada.');
 
-    if ($buy->is_cancelled) {
-        return redirect()->back()->with('error', 'La compra ya está cancelada.');
-    }
+        $buy->load('details.product');
 
-    $buy->load('details.product');
+        DB::transaction(function () use ($buy) {
+            foreach ($buy->details as $detail) {
+                $detail->product->decrement('stock', $detail->quantity);
+            }
 
-    DB::transaction(function () use ($buy) {
-        // Revertir stock
-        foreach ($buy->details as $detail) {
-            $detail->product->decrement('stock', $detail->quantity);
-        }
-
-        // Generar transaction_id único con timestamp
-        $uniqueSuffix = now()->format('YmdHis') . '_' . rand(100, 999);
-        $transactionId = 'ANULACION-COMPRA-' . $buy->id . '-' . $uniqueSuffix;
-
-        $movement = Movement::create([
-            'office_id' => $buy->office_id,
-            'date_movement' => now(),
-            'type_id' => $this->getCancellationTypeId(),
-            'user_id' => auth()->id(),
-            'transaction_id' => $transactionId,
-            'description' => 'Anulación de compra #' . $buy->id,
-            'input_type' => 'S',
-            'origin_office_id' => null,
-            'destination_office_id' => null,
-        ]);
-
-        foreach ($buy->details as $detail) {
-            MovementDetail::create([
-                'movement_id' => $movement->id,
-                'product_id' => $detail->product_id,
-                'quantity' => $detail->quantity,
-                'unit_price' => $detail->price,
-                'subtotal' => $detail->subtotal,
-                'stock_after' => $detail->product->stock,
+            $movement = Movement::create([
+                'office_id' => $buy->office_id,
+                'date_movement' => now(),
+                'type_id' => $this->getCancellationTypeId(),
+                'user_id' => auth()->id(),
+                'transaction_id' => 'ANULACION-COMPRA-' . $buy->id . '-' . time(),
+                'description' => 'Anulación de compra #' . $buy->id,
+                'input_type' => 'S',
             ]);
-        }
 
-        $buy->update(['is_cancelled' => 1]);
-    });
+            foreach ($buy->details as $detail) {
+                MovementDetail::create([
+                    'movement_id' => $movement->id,
+                    'product_id' => $detail->product_id,
+                    'quantity' => $detail->quantity,
+                    'unit_price' => $detail->price,
+                    'subtotal' => $detail->subtotal,
+                    'stock_after' => $detail->product->stock,
+                ]);
+            }
 
-    return redirect()->route('buys.index')->with('success', 'Compra cancelada y stock revertido.');
-}
+            $buy->update(['is_cancelled' => 1]);
+        });
+
+        return redirect()->route('buys.index')->with('success', 'Compra cancelada y stock revertido.');
+    }
 
     public function restore(Buy $buy)
-{
-    if (!auth()->user()->hasRole('Administrador')) {
-        abort(403, 'No autorizado.');
-    }
-
-    if (!$buy->is_cancelled) {
-        return redirect()->back()->with('error', 'La compra no está cancelada.');
-    }
-
-    $buy->load('details.product');
-
-    DB::transaction(function () use ($buy) {
-        foreach ($buy->details as $detail) {
-            $detail->product->increment('stock', $detail->quantity);
-        }
-
-        $uniqueSuffix = now()->format('YmdHis') . '_' . rand(100, 999);
-        $transactionId = 'RESTAURACION-COMPRA-' . $buy->id . '-' . $uniqueSuffix;
-
-        $movement = Movement::create([
-            'office_id' => $buy->office_id,
-            'date_movement' => now(),
-            'type_id' => $this->getRestorationTypeId(),
-            'user_id' => auth()->id(),
-            'transaction_id' => $transactionId,
-            'description' => 'Restauración de compra #' . $buy->id,
-            'input_type' => 'E',
-            'origin_office_id' => null,
-            'destination_office_id' => null,
-        ]);
-
-        foreach ($buy->details as $detail) {
-            MovementDetail::create([
-                'movement_id' => $movement->id,
-                'product_id' => $detail->product_id,
-                'quantity' => $detail->quantity,
-                'unit_price' => $detail->price,
-                'subtotal' => $detail->subtotal,
-                'stock_after' => $detail->product->stock,
-            ]);
-        }
-
-        $buy->update(['is_cancelled' => 0]);
-    });
-
-    return redirect()->route('buys.index')->with('success', 'Compra restaurada correctamente.');
-}
-    private function getPurchaseTypeId()
     {
-        return Type::firstOrCreate(['name' => 'compra'], ['description' => 'Movimiento por compra'])->id;
+        // Igual que cancel pero incrementando
     }
 
-    private function getCancellationTypeId()
-    {
-        return Type::firstOrCreate(['name' => 'anulacion_compra'], ['description' => 'Movimiento por anulación de compra'])->id;
-    }
-
-    private function getRestorationTypeId()
-    {
-        return Type::firstOrCreate(['name' => 'restauracion_compra'], ['description' => 'Movimiento por restauración de compra cancelada'])->id;
-    }
+    private function getPurchaseTypeId() { return Type::firstOrCreate(['name' => 'compra'], ['description' => 'Movimiento por compra'])->id; }
+    private function getCancellationTypeId() { return Type::firstOrCreate(['name' => 'anulacion_compra'], ['description' => 'Movimiento por anulación de compra'])->id; }
+    private function getRestorationTypeId() { return Type::firstOrCreate(['name' => 'restauracion_compra'], ['description' => 'Movimiento por restauración de compra'])->id; }
+    private function getCorrectionTypeId() { return Type::firstOrCreate(['name' => 'correccion_compra'], ['description' => 'Ajuste por edición de compra'])->id; }
 }

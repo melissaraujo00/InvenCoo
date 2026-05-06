@@ -4,104 +4,127 @@
     <x-common.page-breadcrumb pageTitle="Compras" />
 
     <div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
+        {{-- Header --}}
         <div class="mb-6 flex items-center justify-between">
-            <h2 class="text-title-md2 font-bold text-gray-800 dark:text-white/90">
-                Listado de Compras
-            </h2>
+            <div>
+                <h2 class="text-title-md2 font-bold text-gray-800 dark:text-white/90">
+                    Listado de Compras
+                </h2>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">
+                    Historial de adquisiciones y entradas de almacén
+                </p>
+            </div>
             <x-form.button href="{{ route('buys.create') }}" variant="primary" size="md">
-                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Nueva Compra
             </x-form.button>
         </div>
 
+        {{-- Tabla de Compras (Sin 'Acciones' en el header para evitar duplicidad) --}}
         <x-tables.table
             title="Compras registradas"
-            :headers="['ID', 'Fecha', 'Proveedor', 'Total', 'Usuario', 'Oficina', 'Estado']"
+            :headers="['ID', 'Fecha', 'Proveedor', 'Total', 'Responsable', 'Oficina', 'Estado']"
             :paginator="$buys"
+            :searchable="true"
             emptyMessage="No hay compras registradas"
         >
             @foreach($buys as $buy)
                 <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                        {{ $buy->id }}
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">
+                        #{{ $buy->id }}
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                        {{ $buy->date }}
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                        {{ \Carbon\Carbon::parse($buy->date)->format('d/m/Y') }}
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {{ $buy->supplier->company_name ?? 'N/A' }}
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
                         ${{ number_format($buy->total, 2) }}
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                         {{ $buy->user->name }}
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                         {{ $buy->office->name }}
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap">
+                    <td class="px-4 py-4 whitespace-nowrap">
                         @if($buy->is_cancelled)
-                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-400">
                                 Cancelada
                             </span>
                         @else
-                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400">
                                 Activa
                             </span>
                         @endif
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap">
+                    
+                    {{-- Acciones Estandarizadas --}}
+                    <td class="px-4 py-4 whitespace-nowrap">
                         <div class="flex justify-end gap-3 text-gray-500 dark:text-gray-400">
                             {{-- Ver --}}
-                            <a href="{{ route('buys.show', $buy->id) }}"
-                               class="hover:text-blue-500 transition-colors"
-                               title="Ver detalle">
-                                <svg class="fill-current" width="20" height="20" viewBox="0 0 24 24">
-                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" stroke-width="2" fill="none"/>
-                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <a href="{{ route('buys.show', $buy->id) }}" class="hover:text-blue-500 transition-colors" title="Ver detalle">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
                             </a>
 
-                            {{-- Editar (solo admin y no cancelada) --}}
+                            {{-- Editar --}}
                             @role('Administrador')
                                 @if(!$buy->is_cancelled)
-                                    <a href="{{ route('buys.edit', $buy->id) }}"
-                                       class="hover:text-yellow-500 transition-colors"
-                                       title="Editar compra">
-                                        <svg class="fill-current" width="20" height="20" viewBox="0 0 24 24">
-                                            <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <a href="{{ route('buys.edit', $buy->id) }}" class="hover:text-yellow-600 transition-colors" title="Editar compra">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
                                     </a>
                                 @endif
                             @endrole
 
-                            {{-- Cancelar (solo si no está cancelada) --}}
+                            {{-- Anular/Restaurar con Modales de Confirmación --}}
                             @if(!$buy->is_cancelled)
-                                <form action="{{ route('buys.cancel', $buy->id) }}" method="POST" onsubmit="return confirm('¿Anular esta compra? Se revertirá el stock.')">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button class="hover:text-red-500 transition-colors" title="Anular compra">
-                                        <svg class="fill-current" width="20" height="20" viewBox="0 0 24 24">
-                                            <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                    </button>
-                                </form>
-                            @endif
-
-                            {{-- Restaurar (solo si está cancelada) --}}
-                            @if($buy->is_cancelled)
-                                <form action="{{ route('buys.restore', $buy->id) }}" method="POST" onsubmit="return confirm('¿Restaurar esta compra? Se volverá a sumar al stock.')">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button class="hover:text-green-500 transition-colors" title="Restaurar compra">
-                                        <svg class="fill-current" width="20" height="20" viewBox="0 0 24 24">
-                                            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                    </button>
-                                </form>
+                                <x-modal.confirmation 
+                                    title="Anular Compra" 
+                                    :message="'¿Estás seguro que deseas anular la compra'" 
+                                    :itemName="'#' . $buy->id"
+                                    warning="Se restará el stock de los productos comprados y se registrará un movimiento de salida." 
+                                    confirmText="Sí, anular"
+                                    confirmVariant="danger" 
+                                    :action="route('buys.cancel', $buy->id)" 
+                                    method="PATCH" 
+                                    icon="danger"
+                                >
+                                    <x-slot name="trigger">
+                                        <button class="hover:text-red-500 transition-colors" title="Anular compra">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </x-slot>
+                                </x-modal.confirmation>
+                            @else
+                                <x-modal.confirmation 
+                                    title="Restaurar Compra" 
+                                    :message="'¿Deseas restaurar la compra'" 
+                                    :itemName="'#' . $buy->id"
+                                    warning="El stock de los productos volverá a sumarse al inventario." 
+                                    confirmText="Sí, restaurar"
+                                    confirmVariant="primary" 
+                                    :action="route('buys.restore', $buy->id)" 
+                                    method="PATCH" 
+                                    icon="warning"
+                                >
+                                    <x-slot name="trigger">
+                                        <button class="hover:text-green-600 transition-colors" title="Restaurar compra">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                        </button>
+                                    </x-slot>
+                                </x-modal.confirmation>
                             @endif
                         </div>
                     </td>

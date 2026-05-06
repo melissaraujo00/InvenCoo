@@ -16,14 +16,14 @@ class UpdateBuyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'supplier_id' => ['required', 'exists:suppliers,id'],
-            'office_id' => ['required', 'exists:offices,id'],
-            'date' => ['required', 'date'],
-            'discount' => ['nullable', 'numeric', 'min:0'],
-            'products' => ['required', 'array', 'min:1'],
-            'products.*.id' => ['required', 'exists:products,id'],
-            'products.*.quantity' => ['required', 'integer', 'min:1'],
-            'products.*.price' => ['required', 'numeric', 'min:0'],
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'date' => 'required|date',
+            'discount' => 'nullable|numeric|min:0',
+            'iva_rate' => 'nullable|numeric|min:0|max:100',
+            'products' => 'required|array|min:1',
+            'products.*.product_id' => 'required|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
+            'products.*.price' => 'required|numeric|min:0',
         ];
     }
 

@@ -31,8 +31,13 @@ class MenuHelper
                     ['name' => 'Proveedores', 'path' => '/suppliers', 'permission' => 'ver proveedores'],
                     ['name' => 'Categoría', 'path' => '/categories', 'permission' => 'ver categorias'],
                     ['name' => 'Marcas', 'path' => '/brands', 'permission' => 'ver marcas'],
-                    ['name' => 'Movimientos', 'path' => '/movements', 'permission' => 'ver movimientos']
                 ]
+            ],
+            [
+                'icon'=> 'box',
+                'name' => 'Movimientos', 
+                'path' => '/movements', 
+                'permission' => 'ver movimientos'
             ],
             [
                 'icon' => 'ecommerce',
@@ -73,8 +78,8 @@ class MenuHelper
                     // Filtrar subItems
                     $item['subItems'] = collect($item['subItems'])
                         ->filter(function ($subItem) use ($user) {
-                            return !isset($subItem['permission']) || $user->can($subItem['permission']);
-                        })
+                        return !isset($subItem['permission']) || $user->can($subItem['permission']);
+                    })
                         ->values()
                         ->toArray();
 
@@ -105,7 +110,7 @@ class MenuHelper
                 'title' => 'Others',
                 'items' => self::getOthersItems()
             ]
-        ], function($group) {
+        ], function ($group) {
             return !empty($group['items']);
         });
     }

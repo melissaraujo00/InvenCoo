@@ -83,13 +83,6 @@
                                 </div>
                             </div>
                         </form>
-                        
-                        <div class="mt-6 text-center">
-                            <p class="text-sm font-normal text-gray-700 dark:text-gray-400">
-                                ¿No tiene una cuenta?
-                                <a href="{{ route('signup') }}" class="text-brand-600 hover:text-brand-700 font-medium dark:text-brand-400">Solicitar acceso</a>
-                            </p>
-                        </div>
                     </div>
                 </div>
             </div>

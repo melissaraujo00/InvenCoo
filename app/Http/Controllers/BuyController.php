@@ -37,76 +37,110 @@ class BuyController extends Controller
     {
         $suppliers = Supplier::all();
         $products = Product::all();
-        return view('pages.buys.create', compact('suppliers', 'products'));
+        $offices = Office::all(); 
+        return view('pages.buys.create', compact('suppliers', 'products', 'offices'));
     }
 
     public function store(StoreBuyRequest $request)
-    {
-        DB::transaction(function () use ($request) {
-            $user = $request->user();
-            $officeId = $user->office_id;
-            $validated = $request->validated();
+{
+    DB::transaction(function () use ($request) {
+        $user = $request->user();
+        $validated = $request->validated();
+        
+        $subtotal = collect($validated['products'])->sum(fn($item) => $item['quantity'] * $item['price']);
+        $globalDiscount = ($validated['discount_type'] === 'global') ? ($validated['discount'] ?? 0) : 0;
+        
+        // 1. Crear la Compra Maestra
+        $buy = Buy::create([
+            'supplier_id'   => $validated['supplier_id'],
+            'document_type' => $validated['document_type'],
+            'date'          => $validated['date'],
+            'subtotal'      => $subtotal,
+            'discount'      => ($validated['discount_type'] === 'global') ? $globalDiscount : collect($validated['products'])->sum('discount'),
+            'discount_type' => $validated['discount_type'],
+            'total_iva'     => 0, // Se calculará abajo
+            'total'         => 0, // Se calculará abajo
+            'user_id'       => $user->id,
+            'office_id'     => $user->office_id,
+            'is_cancelled'  => false,
+        ]);
 
-            $subtotal = collect($validated['products'])->sum(fn($item) => $item['quantity'] * $item['price']);
-            $discount = $validated['discount'] ?? 0;
+        $movement = Movement::create([
+            'office_id'      => $user->office_id,
+            'date_movement'  => $validated['date'],
+            'type_id'        => $this->getPurchaseTypeId(),
+            'user_id'        => $user->id,
+            'transaction_id' => 'COMPRA-' . $buy->id,
+            'description'    => "Compra doc: " . strtoupper($validated['document_type']),
+            'input_type'     => 'E',
+        ]);
+
+        $runningSubtotal = 0;
+
+        foreach ($validated['products'] as $item) {
+            $product = Product::lockForUpdate()->find($item['product_id']);
+            $linePrice = $item['price'];
+            $lineQty = $item['quantity'];
+            $lineTotal = $linePrice * $lineQty;
             
-            $ivaRate = ($validated['iva_rate'] ?? 0) / 100;
-            $subtotalAfterDiscount = $subtotal - $discount;
-            $totalIva = $subtotalAfterDiscount * $ivaRate;
-            $total = $subtotalAfterDiscount + $totalIva;
-
-            $buy = Buy::create([
-                'supplier_id' => $validated['supplier_id'],
-                'date' => $validated['date'],
-                'subtotal' => $subtotal,
-                'discount' => $discount,
-                'total_iva' => $totalIva,
-                'total' => $total,
-                'user_id' => $user->id,
-                'office_id' => $officeId,
-                'is_cancelled' => false,
-            ]);
-
-            $supplierName = Supplier::find($validated['supplier_id'])->company_name;
-
-            $movement = Movement::create([
-                'office_id' => $officeId,
-                'date_movement' => $validated['date'],
-                'type_id' => $this->getPurchaseTypeId(),
-                'user_id' => $user->id,
-                'transaction_id' => 'COMPRA-' . $buy->id,
-                'description' => "Compra a proveedor: $supplierName",
-                'input_type' => 'E',
-            ]);
-
-            foreach ($validated['products'] as $item) {
-                $product = Product::lockForUpdate()->find($item['product_id']);
-                $quantity = $item['quantity'];
-                $price = $item['price'];
-
-                PurchaseDetail::create([
-                    'buy_id' => $buy->id,
-                    'product_id' => $product->id,
-                    'quantity' => $quantity,
-                    'price' => $price,
-                    'subtotal' => $quantity * $price,
-                ]);
-
-                $product->increment('stock', $quantity);
-
-                MovementDetail::create([
-                    'movement_id' => $movement->id,
-                    'product_id' => $product->id,
-                    'quantity' => $quantity,
-                    'unit_price' => $price,
-                    'subtotal' => $quantity * $price,
-                    'stock_after' => $product->stock,
-                ]);
+            // --- CÁLCULO DE DESCUENTO REAL POR LÍNEA ---
+            $appliedLineDiscount = 0;
+            if ($validated['discount_type'] === 'global') {
+                // FÓRMULA DE PRORRATEO: El descuento se reparte según el peso de la línea en el subtotal
+                $appliedLineDiscount = ($lineTotal / $subtotal) * $globalDiscount;
+            } else {
+                $appliedLineDiscount = $item['discount'] ?? 0;
             }
-        });
 
-        return redirect()->route('buys.index')->with('success', 'Compra registrada exitosamente.');
-    }
+            // --- TRATAMIENTO DEL IVA ---
+            $netLineTotal = $lineTotal - $appliedLineDiscount;
+            $unitCostForKardex = 0;
+
+            if ($validated['document_type'] === 'factura') {
+                // IVA Incluido: Extraemos el 13% para el Kardex
+                $unitCostForKardex = ($netLineTotal / $lineQty) / 1.13;
+            } else {
+                // Crédito Fiscal o Exento: El precio digitado es el neto
+                $unitCostForKardex = ($netLineTotal / $lineQty);
+            }
+
+            // Guardar detalles
+            PurchaseDetail::create([
+                'buy_id'     => $buy->id,
+                'product_id' => $product->id,
+                'quantity'   => $lineQty,
+                'price'      => $linePrice,
+                'discount'   => $appliedLineDiscount,
+                'subtotal'   => $netLineTotal,
+            ]);
+
+            $product->increment('stock', $lineQty);
+            $runningSubtotal += $netLineTotal;
+
+            MovementDetail::create([
+                'movement_id' => $movement->id,
+                'product_id'  => $product->id,
+                'quantity'    => $lineQty,
+                'unit_price'  => $unitCostForKardex, // ¡COSTO REAL NETO!
+                'subtotal'    => $unitCostForKardex * $lineQty,
+                'stock_after' => $product->stock,
+            ]);
+        }
+
+        // --- ACTUALIZACIÓN DE TOTALES FINALES ---
+        $finalIva = ($validated['document_type'] === 'credito_fiscal') ? ($runningSubtotal * 0.13) : 0;
+        if ($validated['document_type'] === 'factura') {
+            $finalIva = $runningSubtotal - ($runningSubtotal / 1.13);
+        }
+
+        $buy->update([
+            'total_iva' => $finalIva,
+            'total'     => ($validated['document_type'] === 'credito_fiscal') ? ($runningSubtotal + $finalIva) : $runningSubtotal
+        ]);
+    });
+
+    return to_route('buys.index')->with('success', 'Compra procesada con éxito y Kardex actualizado.');
+}
 
     public function show(Buy $buy)
     {

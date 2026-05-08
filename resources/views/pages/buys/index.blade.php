@@ -105,26 +105,6 @@
                                         </button>
                                     </x-slot>
                                 </x-modal.confirmation>
-                            @else
-                                <x-modal.confirmation 
-                                    title="Restaurar Compra" 
-                                    :message="'¿Deseas restaurar la compra'" 
-                                    :itemName="'#' . $buy->id"
-                                    warning="El stock de los productos volverá a sumarse al inventario." 
-                                    confirmText="Sí, restaurar"
-                                    confirmVariant="primary" 
-                                    :action="route('buys.restore', $buy->id)" 
-                                    method="PATCH" 
-                                    icon="warning"
-                                >
-                                    <x-slot name="trigger">
-                                        <button class="hover:text-green-600 transition-colors" title="Restaurar compra">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                            </svg>
-                                        </button>
-                                    </x-slot>
-                                </x-modal.confirmation>
                             @endif
                         </div>
                     </td>

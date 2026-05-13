@@ -194,7 +194,7 @@ public function create()
                 if ($bodega->number) {
                     $bodega->notify(new TransferWhatsappNotification(
                         $transfer,
-                        'transfer_request_admin',  // Nombre de la plantilla en WhatsApp Business
+                        'transfer_approved',  // Nombre de la plantilla en WhatsApp Business
                         [
                             (string) $transfer->id,
                             route('transfers.show', $transfer)
@@ -274,7 +274,7 @@ public function create()
         try {
             $requester->notify(new TransferWhatsappNotification(
                 $transfer,
-                'transfer_request_admin', // Plantilla de WhatsApp (debes crearla)
+                'transfer_ready_for_ship', // Plantilla de WhatsApp (debes crearla)
                 [
                     (string) $transfer->id,
                     route('transfers.show', $transfer)
@@ -309,7 +309,7 @@ public function create()
             try {
                 $admin->notify(new TransferWhatsappNotification(
                     $transfer,
-                    'transfer_request_admin',
+                    'transfer_received_admi',
                     [(string) $transfer->id, route('transfers.show', $transfer)]
                 ));
             } catch (\Exception $e) {

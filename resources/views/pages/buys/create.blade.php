@@ -3,332 +3,346 @@
 @section('content')
     <x-common.page-breadcrumb pageTitle="Nueva Compra" />
 
-    <div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
-        {{-- Header con título y botones --}}
+    <div class="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10" x-data="buyForm({
+        productsData: {{ Js::from($products->map(fn($p) => ['id' => $p->id, 'code' => $p->code, 'name' => $p->name])) }}
+    })">
+
         <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h2 class="text-title-md2 font-bold text-gray-800 dark:text-white/90">
-                    Registrar Compra
-                </h2>
+                <h2 class="text-title-md2 font-bold text-gray-800 dark:text-white/90">Registrar Compra</h2>
+                <p class="text-sm text-gray-500">Ingrese los suministros recibidos para la cooperativa o el restaurante.</p>
             </div>
-
-            <div class="flex gap-3">
-                <x-form.button href="{{ route('buys.index') }}" variant="secondary" size="md">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Volver al listado
-                </x-form.button>
-            </div>
+            <x-form.button href="{{ route('buys.index') }}" variant="secondary" size="md">
+                Volver al listado
+            </x-form.button>
         </div>
 
-        {{-- Formulario principal --}}
-        <form action="{{ route('buys.store') }}" method="POST">
+        <form action="{{ route('buys.store') }}" method="POST" @submit="submitForm($event)">
             @csrf
 
-            {{-- Tarjeta: Información de la Compra --}}
-            <x-common.component-card title="" class="mb-1">
-                <div class="p-1">
-                    <div class="flex flex-col md:flex-row gap-4 mb-4">
-                        <div class="w-full md:w-1/2 space-y-4">
-                            <x-form.select
-                                name="supplier_id"
-                                label="Proveedor"
-                                :options="$suppliers->pluck('company_name', 'id')->toArray()"
-                                :value="old('supplier_id')"
-                                placeholder="Seleccione un proveedor (opcional)"
-                            />
-                        </div>
-                        <div class="w-full md:w-1/2 space-y-4">
-                            <x-form.group name="date" label="Fecha" :required="true">
-                                <x-form.input
-                                    type="date"
-                                    name="date"
-                                    :required="true"
-                                    :value="old('date', date('Y-m-d'))"
-                                />
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {{-- Encabezado --}}
+                <x-common.component-card title="Datos del Documento" class="lg:col-span-2">
+                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                        {{-- Fila 1: Proveedor y Fecha --}}
+                        <div class="relative z-50">
+                            <x-form.group name="supplier_id" label="Proveedor" :required="true">
+                                <x-form.select name="supplier_id" :options="$suppliers->pluck('company_name', 'id')" :value="old('supplier_id')"
+                                    placeholder="Seleccione proveedor" searchable />
                             </x-form.group>
                         </div>
+
+                        <x-form.group name="date" label="Fecha de Emisión" :required="true">
+                            <x-form.input type="date" name="date" :required="true" :value="old('date', date('Y-m-d'))" />
+                        </x-form.group>
+
+                        {{-- Fila 2: Tipo de IVA y Almacén Destino --}}
+                        <div class="relative z-40">
+                            <x-form.group name="document_type" label="Tipo de Documento (IVA)" :required="true">
+                                <select name="document_type" x-model="document_type"
+                                    class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                                    <option value="factura">Factura de Consumidor Final (IVA Incluido)</option>
+                                    <option value="credito_fiscal">Crédito Fiscal (+13% IVA)</option>
+                                    <option value="exento">Sujeto Exento / Mercado (Sin IVA)</option>
+                                </select>
+                            </x-form.group>
+                        </div>
+
+                        <div class="relative z-40">
+                            <x-form.group name="office_id" label="Oficina/Almacén de Destino" :required="true">
+                                <x-form.select name="office_id" :options="$offices->pluck('name', 'id')" :value="old('office_id', auth()->user()->office_id)"
+                                    placeholder="Seleccione almacén" searchable />
+                            </x-form.group>
+                        </div>
+
                     </div>
+                </x-common.component-card>
 
-                    <div class="flex flex-col md:flex-row gap-4 mb-4">
-                        <div class="w-full md:w-1/2 space-y-4">
-                            <x-form.group name="discount" label="Descuento (monto fijo)">
-                                <x-form.input
-                                    type="number"
-                                    step="0.01"
-                                    name="discount"
-                                    id="discount"
-                                    placeholder="0.00"
-                                    :value="old('discount', 0)"
-                                />
-                            </x-form.group>
+                {{-- Gestión de Descuentos --}}
+                <x-common.component-card title="Configuración de Descuentos">
+                    <div class="p-6 space-y-6">
+
+                        {{-- Control Segmentado 1: Modo de Descuento --}}
+                        <div>
+                            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Modo de
+                                Descuento</label>
+                            <div
+                                class="flex h-11 items-center rounded-lg border border-gray-300 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-900/50">
+                                <button type="button" @click="is_global_discount = true"
+                                    :class="is_global_discount ?
+                                        'bg-white shadow-sm dark:bg-gray-800 text-brand-600 dark:text-brand-400 font-bold' :
+                                        'text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:dark:text-gray-200'"
+                                    class="w-1/2 h-full rounded-md text-sm transition-all">
+                                    Global
+                                </button>
+                                <button type="button" @click="is_global_discount = false"
+                                    :class="!is_global_discount ?
+                                        'bg-white shadow-sm dark:bg-gray-800 text-brand-600 dark:text-brand-400 font-bold' :
+                                        'text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:dark:text-gray-200'"
+                                    class="w-1/2 h-full rounded-md text-sm transition-all">
+                                    Por Artículo
+                                </button>
+                            </div>
+                            {{-- Input oculto para enviar al backend --}}
+                            <input type="hidden" name="discount_type" :value="is_global_discount ? 'global' : 'item'">
                         </div>
-                        <div class="w-full md:w-1/2 space-y-4">
-                            <x-form.group name="iva_rate" label="IVA (%)">
-                                <x-form.input
-                                    type="number"
-                                    step="0.01"
-                                    name="iva_rate"
-                                    id="iva_rate"
-                                    placeholder="0"
-                                    :value="old('iva_rate', 0)"
-                                />
-                            </x-form.group>
-                        </div>
-                    </div>
-                </div>
-            </x-common.component-card>
 
-            {{-- Tarjeta: Productos --}}
-            <x-common.component-card title="Productos" class="mt-6">
-                <div class="p-4">
-                    <div class="space-y-4" id="products-container">
-                        @php
-                            $productsList = old('products', [['product_id' => '', 'quantity' => 1, 'price' => 0]]);
-                        @endphp
+                        {{-- Panel de Descuento Global (Aparece solo si el modo es Global) --}}
+                        <div x-show="is_global_discount" x-transition class="space-y-4">
 
-                        @foreach($productsList as $index => $item)
-                            <div class="product-row flex flex-col md:flex-row gap-4 items-end">
-                                <div class="w-full md:w-1/3">
-                                    <x-form.group name="products[{{ $index }}][product_id]" label="Producto" :required="true">
-                                        <select name="products[{{ $index }}][product_id]" class="product-select w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm">
-                                            <option value="">Seleccione un producto</option>
-                                            @foreach($products as $product)
-                                                <option value="{{ $product->id }}" {{ ($item['product_id'] ?? '') == $product->id ? 'selected' : '' }}>
-                                                    {{ $product->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </x-form.group>
-                                </div>
-                                <div class="w-full md:w-1/4">
-                                    <x-form.group name="products[{{ $index }}][quantity]" label="Cantidad" :required="true">
-                                        <x-form.input
-                                            type="number"
-                                            step="1"
-                                            class="product-quantity"
-                                            name="products[{{ $index }}][quantity]"
-                                            placeholder="1"
-                                            :required="true"
-                                            :value="old('products.' . $index . '.quantity', $item['quantity'] ?? 1)"
-                                        />
-                                    </x-form.group>
-                                </div>
-                                <div class="w-full md:w-1/4">
-                                    <x-form.group name="products[{{ $index }}][price]" label="Precio unitario" :required="true">
-                                        <x-form.input
-                                            type="number"
-                                            step="0.01"
-                                            class="product-price"
-                                            name="products[{{ $index }}][price]"
-                                            placeholder="0.00"
-                                            :required="true"
-                                            :value="old('products.' . $index . '.price', $item['price'] ?? 0)"
-                                        />
-                                    </x-form.group>
-                                </div>
-                                <div class="flex items-center">
-                                    <button type="button" class="remove-product-row text-red-500 hover:text-red-700 mb-2">
-                                        Eliminar
+                            {{-- Control Segmentado 2: Tipo de Valor --}}
+                            <div>
+                                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Aplicar
+                                    como</label>
+                                <div
+                                    class="flex h-11 items-center rounded-lg border border-gray-300 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-900/50">
+                                    <button type="button" @click="discount_unit = 'money'"
+                                        :class="discount_unit === 'money' ?
+                                            'bg-white shadow-sm dark:bg-gray-800 text-brand-600 dark:text-brand-400 font-bold' :
+                                            'text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:dark:text-gray-200'"
+                                        class="w-1/2 h-full rounded-md text-sm transition-all">
+                                        Monto ($)
+                                    </button>
+                                    <button type="button" @click="discount_unit = 'percent'"
+                                        :class="discount_unit === 'percent' ?
+                                            'bg-white shadow-sm dark:bg-gray-800 text-brand-600 dark:text-brand-400 font-bold' :
+                                            'text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:dark:text-gray-200'"
+                                        class="w-1/2 h-full rounded-md text-sm transition-all">
+                                        Porcentaje (%)
                                     </button>
                                 </div>
                             </div>
-                        @endforeach
-                    </div>
 
-                    <button type="button" id="add-product-row"
-                        class="mt-4 inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 transition-colors">
-                        <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20">
-                            <path d="M10.8333 5V9.16667H15V10.8333H10.8333V15H9.16667V10.8333H5V9.16667H9.16667V5H10.8333Z" />
-                        </svg>
-                        Agregar otro producto
-                    </button>
-                </div>
-            </x-common.component-card>
+                            {{-- Input del Valor --}}
+                            <x-form.group name="discount" label="Valor del Descuento">
+                                <x-form.input type="number" step="0.01" x-model.number="global_discount_input"
+                                    placeholder="0.00" />
+                            </x-form.group>
+                        </div>
 
-            {{-- Tarjeta de Totales --}}
-            <x-common.component-card title="Resumen de Totales" class="mt-6">
-                <div class="p-4 space-y-2">
-                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
-                        <span>Subtotal:</span>
-                        <span id="subtotal_display">0.00</span>
                     </div>
-                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
-                        <span>Descuento:</span>
-                        <span id="discount_display">0.00</span>
-                    </div>
-                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
-                        <span>Subtotal después de descuento:</span>
-                        <span id="subtotal_after_discount_display">0.00</span>
-                    </div>
-                    <div class="flex justify-between text-gray-700 dark:text-gray-300">
-                        <span>IVA (<span id="iva_rate_display">0</span>%):</span>
-                        <span id="iva_amount_display">0.00</span>
-                    </div>
-                    <div class="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
-                        <span>Total:</span>
-                        <span id="total_display">0.00</span>
-                    </div>
-                </div>
-            </x-common.component-card>
-
-            {{-- Botones de acción --}}
-            <div class="flex flex-col sm:flex-row justify-end gap-3 mt-8">
-                <x-form.button type="button" href="{{ route('buys.index') }}" variant="secondary" size="lg">
-                    Cancelar
-                </x-form.button>
-                <x-form.button type="submit" variant="primary" size="lg">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Registrar Compra
-                </x-form.button>
+                </x-common.component-card>
             </div>
 
-            {{-- Campos ocultos para enviar los totales calculados (opcional) --}}
-            <input type="hidden" name="subtotal" id="subtotal_input" value="0">
-            <input type="hidden" name="total" id="total_input" value="0">
-            <input type="hidden" name="total_iva" id="total_iva_input" value="0">
+            {{-- Detalle de Productos --}}
+            <x-common.component-card title="Detalle de Productos" class="mb-6 overflow-visible">
+                <div
+                    class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-t-xl relative z-40">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+                        <div class="lg:col-span-4 relative" @click.away="searchOpen = false">
+                            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Buscar
+                                Producto</label>
+                            <input type="text" x-model="searchQuery" @focus="searchOpen = true"
+                                @click="searchOpen = true" placeholder="Haga clic para buscar..."
+                                class="h-11 w-full rounded-lg border border-brand-300 bg-white px-4 py-2 text-sm focus:border-brand-500 focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white transition-all">
+                            <div x-show="searchOpen"
+                                class="absolute left-0 right-0 top-full mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800 z-50">
+                                <template x-for="p in filteredSearch" :key="p.id">
+                                    <div @click="selectProduct(p)"
+                                        class="cursor-pointer px-4 py-3 hover:bg-brand-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors text-gray-800 dark:text-white">
+                                        <div class="font-medium" x-text="p.name"></div>
+                                        <div class="text-xs text-gray-500 font-mono" x-text="p.code"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2"><label
+                                class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Cantidad</label><input
+                                type="number" min="1" x-model.number="draft.quantity" @keyup.enter="addToCart()"
+                                class="h-11 w-full rounded-lg border border-gray-300 bg-white px-4 text-center dark:bg-gray-900 dark:text-white">
+                        </div>
+                        <div class="lg:col-span-2"><label
+                                class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">$
+                                Costo</label><input type="number" min="0" step="0.01"
+                                x-model.number="draft.price" @keyup.enter="addToCart()"
+                                class="h-11 w-full rounded-lg border border-gray-300 bg-white px-4 text-right dark:bg-gray-900 dark:text-white">
+                        </div>
+                        <div class="lg:col-span-2">
+                            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
+                                :class="is_global_discount ? 'opacity-50' : ''">$ Desc. Item</label>
+                            <input type="number" min="0" step="0.01" x-model.number="draft.discount"
+                                @keyup.enter="addToCart()" :disabled="is_global_discount"
+                                :class="is_global_discount ? 'bg-gray-100 cursor-not-allowed dark:bg-gray-800' :
+                                    'bg-white dark:bg-gray-900'"
+                                class="h-11 w-full rounded-lg border border-gray-300 px-4 text-right dark:text-white">
+                        </div>
+                        <div class="lg:col-span-2"><button type="button" @click="addToCart()" :disabled="!draft.product"
+                                class="h-11 w-full rounded-lg bg-brand-600 font-medium text-white hover:bg-brand-700 transition-colors">Insertar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                            <tr>
+                                <th class="px-4 py-3">Código</th>
+                                <th class="px-4 py-3">Producto</th>
+                                <th class="px-4 py-3 text-center w-24">Cant.</th>
+                                <th class="px-4 py-3 text-right w-32">P. Unitario</th>
+                                <th class="px-4 py-3 text-right w-32" x-show="!is_global_discount">Desc. Item</th>
+                                <th class="px-4 py-3 text-right w-32">Subtotal</th>
+                                <th class="px-4 py-3 text-center w-16">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                            <template x-for="(item, index) in items" :key="item.unique_id">
+                                <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                                    <input type="hidden" :name="'products[' + index + '][product_id]'"
+                                        :value="item.product_id">
+                                    <td class="px-4 py-3 font-mono text-xs text-gray-500" x-text="item.code"></td>
+                                    <td class="px-4 py-3 font-medium text-gray-900 dark:text-white" x-text="item.name">
+                                    </td>
+                                    <td class="px-4 py-2"><input type="number" x-model.number="item.quantity"
+                                            :name="'products[' + index + '][quantity]'"
+                                            class="w-full h-9 rounded-lg border border-gray-300 bg-white text-center dark:bg-gray-900 dark:text-white">
+                                    </td>
+                                    <td class="px-4 py-2"><input type="number" step="0.01"
+                                            x-model.number="item.price" :name="'products[' + index + '][price]'"
+                                            class="w-full h-9 rounded-lg border border-gray-300 bg-white text-right dark:bg-gray-900 dark:text-white">
+                                    </td>
+                                    <td class="px-4 py-2" x-show="!is_global_discount"><input type="number"
+                                            step="0.01" x-model.number="item.discount"
+                                            :name="'products[' + index + '][discount]'"
+                                            class="w-full h-9 rounded-lg border border-gray-300 bg-white text-right dark:bg-gray-900 dark:text-white">
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-bold text-gray-900 dark:text-white"
+                                        x-text="'$' + ((item.quantity * item.price) - (is_global_discount ? 0 : item.discount)).toFixed(2)">
+                                    </td>
+                                    <td class="px-4 py-3 text-center"><button type="button" @click="removeItem(index)"
+                                            class="text-error-500 hover:bg-error-50 dark:hover:bg-error-500/10 p-1.5 rounded-lg"><svg
+                                                class="w-5 h-5" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg></button></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </x-common.component-card>
+
+            <div class="flex flex-col lg:flex-row gap-6 items-start pb-24">
+                <div class="w-full lg:w-1/2"></div>
+                <x-common.component-card title="Cálculos de Factura" class="w-full lg:w-1/2">
+                    <div class="p-6 space-y-4">
+                        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400"><span>Subtotal
+                                Bruto:</span><span class="font-bold text-gray-900 dark:text-white"
+                                x-text="'$' + subtotal.toFixed(2)"></span></div>
+                        <div class="flex justify-between text-sm text-error-600 font-bold"><span>Descuento
+                                Total:</span><span x-text="'-$' + total_discount.toFixed(2)"></span></div>
+                        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400"><span>IVA:</span><span
+                                class="font-bold text-gray-900 dark:text-white"
+                                x-text="'$' + iva_amount.toFixed(2)"></span></div>
+                        <div
+                            class="pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between text-2xl font-black text-brand-600 dark:text-brand-400">
+                            <span>TOTAL:</span><span x-text="'$' + total.toFixed(2)"></span></div>
+                    </div>
+                </x-common.component-card>
+            </div>
+
+            <div
+                class="fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 p-4 lg:left-72">
+                <div class="mx-auto max-w-screen-2xl flex justify-end gap-4">
+                    <x-form.button href="{{ route('buys.index') }}" variant="secondary"
+                        size="lg">Cancelar</x-form.button>
+                    <x-form.button type="submit" variant="primary" size="lg">Registrar Compra</x-form.button>
+                </div>
+            </div>
         </form>
     </div>
-@endsection
 
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const container = document.getElementById('products-container');
-        const addButton = document.getElementById('add-product-row');
-        const discountInput = document.getElementById('discount');
-        const ivaRateInput = document.getElementById('iva_rate');
+    <script>
+        function buyForm(config) {
+            return {
+                productsData: config.productsData,
+                items: [],
+                document_type: 'factura',
+                is_global_discount: true,
+                discount_unit: 'money',
+                global_discount_input: 0,
+                searchQuery: '',
+                searchOpen: false,
+                draft: {
+                    product: null,
+                    quantity: 1,
+                    price: 0,
+                    discount: 0
+                },
 
-        // Función para recalcular todos los totales
-        function recalculateTotals() {
-            let subtotal = 0;
-            const rows = container.querySelectorAll('.product-row');
-            rows.forEach(row => {
-                const quantity = parseFloat(row.querySelector('.product-quantity')?.value) || 0;
-                const price = parseFloat(row.querySelector('.product-price')?.value) || 0;
-                subtotal += quantity * price;
-            });
+                get filteredSearch() {
+                    const q = this.searchQuery.toLowerCase().trim();
+                    return q === '' ? this.productsData.slice(0, 15) : this.productsData.filter(p => p.name
+                    .toLowerCase().includes(q) || p.code.toLowerCase().includes(q)).slice(0, 15);
+                },
 
-            const discount = parseFloat(discountInput?.value) || 0;
-            const subtotalAfterDiscount = subtotal - discount;
-            const ivaRate = parseFloat(ivaRateInput?.value) || 0;
-            const ivaAmount = subtotalAfterDiscount * (ivaRate / 100);
-            const total = subtotalAfterDiscount + ivaAmount;
+                selectProduct(p) {
+                    this.draft.product = p;
+                    this.searchQuery = p.name;
+                    this.searchOpen = false;
+                },
 
-            // Actualizar displays
-            document.getElementById('subtotal_display').innerText = subtotal.toFixed(2);
-            document.getElementById('discount_display').innerText = discount.toFixed(2);
-            document.getElementById('subtotal_after_discount_display').innerText = subtotalAfterDiscount.toFixed(2);
-            document.getElementById('iva_rate_display').innerText = ivaRate;
-            document.getElementById('iva_amount_display').innerText = ivaAmount.toFixed(2);
-            document.getElementById('total_display').innerText = total.toFixed(2);
+                addToCart() {
+                    if (!this.draft.product || this.draft.quantity < 1) return;
+                    const existing = this.items.find(i => i.product_id === this.draft.product.id);
+                    const appliedDiscount = this.is_global_discount ? 0 : this.draft.discount;
 
-            // Actualizar campos ocultos para enviar al servidor
-            document.getElementById('subtotal_input').value = subtotal.toFixed(2);
-            document.getElementById('total_input').value = total.toFixed(2);
-            document.getElementById('total_iva_input').value = ivaAmount.toFixed(2);
-        }
+                    if (existing) {
+                        existing.quantity += this.draft.quantity;
+                        existing.price = this.draft.price;
+                        existing.discount = appliedDiscount;
+                    } else {
+                        this.items.push({
+                            unique_id: Date.now(),
+                            product_id: this.draft.product.id,
+                            name: this.draft.product.name,
+                            code: this.draft.product.code,
+                            quantity: this.draft.quantity,
+                            price: this.draft.price,
+                            discount: appliedDiscount
+                        });
+                    }
+                    this.draft = {
+                        product: null,
+                        quantity: 1,
+                        price: 0,
+                        discount: 0
+                    };
+                    this.searchQuery = '';
+                },
 
-        // Función para crear una nueva fila de producto vacía
-        function createEmptyRow(index) {
-            const div = document.createElement('div');
-            div.className = 'product-row flex flex-col md:flex-row gap-4 items-end';
-            div.innerHTML = `
-                <div class="w-full md:w-1/3">
-                    <div class="space-y-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-400">Producto</label>
-                        <select name="products[${index}][product_id]" class="product-select w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm">
-                            <option value="">Seleccione un producto</option>
-                            @foreach($products as $product)
-                                <option value="{{ $product->id }}">{{ $product->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="w-full md:w-1/4">
-                    <div class="space-y-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-400">Cantidad</label>
-                        <input type="number" step="1" name="products[${index}][quantity]" value="1" class="product-quantity w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm">
-                    </div>
-                </div>
-                <div class="w-full md:w-1/4">
-                    <div class="space-y-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-400">Precio unitario</label>
-                        <input type="number" step="0.01" name="products[${index}][price]" value="0.00" class="product-price w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm">
-                    </div>
-                </div>
-                <div class="flex items-center">
-                    <button type="button" class="remove-product-row text-red-500 hover:text-red-700 mb-2">Eliminar</button>
-                </div>
-            `;
-            return div;
-        }
-
-        // Agregar fila
-        if (addButton) {
-            addButton.addEventListener('click', function() {
-                const rows = container.querySelectorAll('.product-row');
-                const newIndex = rows.length;
-                let newRow;
-                if (rows.length === 0) {
-                    newRow = createEmptyRow(newIndex);
-                } else {
-                    const firstRow = rows[0];
-                    newRow = firstRow.cloneNode(true);
-                    // Actualizar índices y limpiar valores
-                    newRow.querySelectorAll('select, input').forEach(element => {
-                        const name = element.getAttribute('name');
-                        if (name) {
-                            element.setAttribute('name', name.replace(/\[\d+\]/, `[${newIndex}]`));
-                        }
-                        if (element.tagName === 'SELECT') element.value = '';
-                        else if (element.tagName === 'INPUT') {
-                            if (element.classList.contains('product-quantity')) element.value = '1';
-                            else if (element.classList.contains('product-price')) element.value = '0.00';
-                            else element.value = '';
-                        }
-                        element.removeAttribute('selected');
-                        element.removeAttribute('checked');
-                    });
+                removeItem(index) {
+                    this.items.splice(index, 1);
+                },
+                get subtotal() {
+                    return this.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+                },
+                get total_discount() {
+                    if (this.is_global_discount) {
+                        return this.discount_unit === 'percent' ? this.subtotal * (this.global_discount_input / 100) :
+                            this.global_discount_input;
+                    }
+                    return this.items.reduce((sum, item) => sum + (item.discount || 0), 0);
+                },
+                get iva_amount() {
+                    const base = this.subtotal - this.total_discount;
+                    if (this.document_type === 'credito_fiscal') return base * 0.13;
+                    if (this.document_type === 'factura') return base - (base / 1.13);
+                    return 0;
+                },
+                get total() {
+                    const base = this.subtotal - this.total_discount;
+                    return this.document_type === 'credito_fiscal' ? base + this.iva_amount : base;
+                },
+                submitForm(e) {
+                    if (this.items.length === 0) {
+                        e.preventDefault();
+                        alert('Debe insertar productos.');
+                    }
                 }
-                container.appendChild(newRow);
-                attachRowEvents(newRow);
-                recalculateTotals();
-            });
-        }
-
-        // Adjuntar eventos a los inputs de una fila
-        function attachRowEvents(row) {
-            const quantityInput = row.querySelector('.product-quantity');
-            const priceInput = row.querySelector('.product-price');
-            if (quantityInput) quantityInput.addEventListener('input', recalculateTotals);
-            if (priceInput) priceInput.addEventListener('input', recalculateTotals);
-        }
-
-        // Eliminar fila (delegación)
-        container.addEventListener('click', (e) => {
-            const removeBtn = e.target.closest('.remove-product-row');
-            if (!removeBtn) return;
-            const row = removeBtn.closest('.product-row');
-            if (container.querySelectorAll('.product-row').length > 1) {
-                row.remove();
-                recalculateTotals();
-            } else {
-                alert('Debe haber al menos un producto en la compra.');
             }
-        });
-
-        // Eventos para descuento e IVA
-        if (discountInput) discountInput.addEventListener('input', recalculateTotals);
-        if (ivaRateInput) ivaRateInput.addEventListener('input', recalculateTotals);
-
-        // Asignar eventos a las filas existentes y recalcular inicial
-        document.querySelectorAll('.product-row').forEach(row => attachRowEvents(row));
-        recalculateTotals();
-    });
-</script>
-@endpush
+        }
+    </script>
+@endsection

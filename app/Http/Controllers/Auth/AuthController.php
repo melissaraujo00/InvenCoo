@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\Auth; // Asegúrate de que diga \Auth
+namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller; // Importante para que extienda de la clase base
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    // Lógica de Registro
     public function register(Request $request) {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -28,21 +27,24 @@ class AuthController extends Controller
         return redirect()->route('dashboard');
     }
 
-    // Lógica de Inicio de Sesión
     public function login(Request $request) {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        // Extraemos el valor del checkbox "Recuérdame"
+        $remember = $request->boolean('remember');
+
+        // Pasamos el parámetro $remember al método attempt
+        if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
             return redirect()->intended('/');
         }
 
         return back()->withErrors([
-            'email' => 'Las credenciales no coinciden.',
-        ]);
+            'email' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
+        ])->onlyInput('email');
     }
 
     public function logout(Request $request) {

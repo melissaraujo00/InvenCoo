@@ -7,14 +7,11 @@ use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Category;
-use App\Models\Office;
 use App\Models\Brand;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-
-
     public function index(Request $request)
     {
         $products = Product::with(['category', 'brand', 'office', 'suppliers'])
@@ -22,14 +19,10 @@ class ProductController extends Controller
                 $search = $request->search;
                 $query->where('code', 'LIKE', "%{$search}%")
                     ->orWhere('name', 'LIKE', "%{$search}%")
-                    ->orWhereHas('brand', function ($q) use ($search) {
-                        $q->where('name', 'LIKE', "%{$search}%");
-                    })
-                    ->orWhereHas('office', function ($q) use ($search) {
-                        $q->where('name', 'LIKE', "%{$search}%");
-                    });
+                    ->orWhereHas('brand', fn($q) => $q->where('name', 'LIKE', "%{$search}%"))
+                    ->orWhereHas('office', fn($q) => $q->where('name', 'LIKE', "%{$search}%"));
             })
-            ->paginate(15);
+            ->paginate(15)->withQueryString();
 
         return view('pages.products.index', compact('products'));
     }
@@ -44,39 +37,37 @@ class ProductController extends Controller
     }
 
     public function store(StoreProductRequest $request)
-{
-    $validated = $request->validated();
+    {
+        $validated = $request->validated();
 
-    // Generar código único automáticamente
-    $lastProduct = Product::orderBy('id', 'desc')->first();
-    $lastCode = $lastProduct ? $lastProduct->code : 'PROD-0000';
-    $lastNumber = (int) substr($lastCode, 5);
-    $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-    $validated['code'] = 'PROD-' . $newNumber;
+        $lastProduct = Product::orderBy('id', 'desc')->first();
+        $lastCode = $lastProduct ? $lastProduct->code : 'PROD-0000';
+        $lastNumber = (int) substr($lastCode, 5);
+        $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+        $validated['code'] = 'PROD-' . $newNumber;
 
-    // Asignar la oficina del usuario autenticado
-    $validated['office_id'] = $request->user()->office_id;
+        $validated['office_id'] = $request->user()->office_id;
 
-    $product = Product::create($validated);
+        $product = Product::create($validated);
 
-    // Asociar proveedores (sin cambios)
-    if ($request->has('suppliers') && !empty($request->suppliers)) {
-        $suppliersData = [];
-        foreach ($request->suppliers as $supplier) {
-            if (!empty($supplier['id'])) {
-                $suppliersData[$supplier['id']] = ['price' => $supplier['price']];
+        if ($request->has('suppliers') && !empty($request->suppliers)) {
+            $suppliersData = [];
+            foreach ($request->suppliers as $supplier) {
+                if (!empty($supplier['id'])) {
+                    $suppliersData[$supplier['id']] = ['price' => $supplier['price']];
+                }
+            }
+            if (!empty($suppliersData)) {
+                $product->suppliers()->attach($suppliersData);
             }
         }
-        if (!empty($suppliersData)) {
-            $product->suppliers()->attach($suppliersData);
-        }
-    }
 
-    return to_route('products.index')->with('success', 'Producto creado exitosamente.');
-}
+        return to_route('products.index')->with('success', 'Producto creado exitosamente.');
+    }
 
     public function show(Product $product)
     {
+        // Se mantiene para el futuro o si decides usar una vista dedicada
         $product->load(['category', 'brand', 'office', 'suppliers']);
         return view('pages.products.show', compact('product'));
     }
@@ -93,20 +84,18 @@ class ProductController extends Controller
 
     public function update(UpdateProductRequest $request, Product $product)
     {
-        // Obtener datos validados
         $validated = $request->validated();
-
-        // Asegurar que la oficina sea la del usuario (por si acaso)
-        $validated['office_id'] = $request->user()->office_id;
-
-        // Actualizar producto
+        
+        // ELIMINADA la reasignación de office_id. Un producto no cambia de oficina solo por ser editado.
+        
         $product->update($validated);
 
-        // Sincronizar proveedores
         if ($request->has('suppliers')) {
             $suppliersData = [];
             foreach ($request->suppliers as $supplier) {
-                $suppliersData[$supplier['id']] = ['price' => $supplier['price']];
+                if (!empty($supplier['id'])) {
+                    $suppliersData[$supplier['id']] = ['price' => $supplier['price']];
+                }
             }
             $product->suppliers()->sync($suppliersData);
         } else {
@@ -119,10 +108,16 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        $product->suppliers()->detach();
-        $product->delete();
-
-        return to_route('products.index')
-            ->with('success', 'Producto eliminado exitosamente.');
+        try {
+            $product->suppliers()->detach();
+            $product->delete();
+            return to_route('products.index')->with('success', 'Producto eliminado exitosamente.');
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == "23000") {
+                return to_route('products.index')
+                    ->with('error', 'No puedes eliminar este producto porque tiene movimientos de inventario o ventas asociadas.');
+            }
+            throw $e;
+        }
     }
 }

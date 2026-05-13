@@ -26,7 +26,7 @@
 
             <x-common.component-card title="Información Principal" class="mb-6">
                 <div class="p-6">
-                    
+
                     {{-- PRIMERA FILA: Código Simétrico y Nombre --}}
                     <div class="flex flex-col md:flex-row gap-6 mb-6">
                         <div class="w-full md:w-1/2">
@@ -47,21 +47,21 @@
                     <div class="flex flex-col md:flex-row gap-6 mb-6">
                         <div class="w-full md:w-1/2 relative z-30">
                             <x-form.group name="category_id" label="Categoría" :required="true">
-                                <x-form.select 
-                                    name="category_id" 
-                                    :options="$categories->pluck('name', 'id')" 
-                                    :value="old('category_id')" 
-                                    placeholder="Seleccione una categoría" 
+                                <x-form.select
+                                    name="category_id"
+                                    :options="$categories->pluck('name', 'id')"
+                                    :value="old('category_id')"
+                                    placeholder="Seleccione una categoría"
                                     searchable />
                             </x-form.group>
                         </div>
                         <div class="w-full md:w-1/2 relative z-20">
                             <x-form.group name="brand_id" label="Marca" :required="false">
-                                <x-form.select 
-                                    name="brand_id" 
-                                    :options="$brands->pluck('name', 'id')" 
-                                    :value="old('brand_id')" 
-                                    placeholder="Seleccione una marca (opcional)" 
+                                <x-form.select
+                                    name="brand_id"
+                                    :options="$brands->pluck('name', 'id')"
+                                    :value="old('brand_id')"
+                                    placeholder="Seleccione una marca (opcional)"
                                     searchable />
                             </x-form.group>
                         </div>
@@ -80,8 +80,13 @@
                             </x-form.group>
                         </div>
                         <div class="w-full md:w-1/3">
-                            <x-form.group name="unit" label="Unidad de Medida" :required="true">
-                                <x-form.input type="text" name="unit" placeholder="Caja, Litro, Unidad" :required="true" :value="old('unit')" />
+                           <x-form.group name="unit_id" label="Unidad" :required="false">
+                                <x-form.select
+                                    name="unit_id"
+                                    :options="$units->pluck('name', 'id')"
+                                    :value="old('unit_id')"
+                                    placeholder="Seleccione una unidad (opcional)"
+                                    searchable />
                             </x-form.group>
                         </div>
                     </div>
@@ -90,19 +95,19 @@
 
             {{-- Tarjeta 2: Proveedores (Motor Reactivo con Validaciones y Select Premium) --}}
             <x-common.component-card title="Proveedores y Costos" class="mb-6">
-                <div class="p-6" 
-                     x-data="{ 
+                <div class="p-6"
+                     x-data="{
                         // 1. Cargamos datos viejos, datos de DB, o array vacío
                         suppliers: {{ Js::from(old('suppliers', isset($product) && $product->suppliers->count() > 0 ? $product->suppliers->map(fn($s) => ['id' => $s->id, 'price' => $s->pivot->price])->toArray() : [['id' => '', 'price' => '']])) }},
-                        
+
                         // 2. Inyectamos los errores de Laravel y las opciones de proveedores a JS
                         serverErrors: {{ Js::from($errors->toArray()) }},
                         supplierOptions: {{ Js::from($suppliers->pluck('company_name', 'id')) }},
-                        
+
                         init() { if(this.suppliers.length === 0) this.addSupplier() },
                         addSupplier() { this.suppliers.push({id: '', price: ''}) },
                         removeSupplier(index) { if(this.suppliers.length > 1) this.suppliers.splice(index, 1) },
-                        
+
                         // 3. Funciones para detectar errores específicos de cada fila
                         hasError(field, index) {
                             return this.serverErrors['suppliers.' + index + '.' + field] !== undefined;
@@ -111,15 +116,15 @@
                             return this.serverErrors['suppliers.' + index + '.' + field][0];
                         }
                      }">
-                     
+
                     <div class="space-y-4 relative z-10">
                         <template x-for="(supplier, index) in suppliers" :key="index">
                             <div class="flex flex-col md:flex-row gap-4 items-start bg-gray-50/50 dark:bg-gray-800/20 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                                
+
                                 {{-- PROVEEDOR: Select Premium con Buscador Integrado --}}
                                 <div class="w-full md:w-1/2">
                                     <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Proveedor</label>
-                                    
+
                                     <div x-data="{
                                             open: false,
                                             search: '',
@@ -131,9 +136,9 @@
                                                 );
                                             }
                                         }" class="relative z-20">
-                                        
+
                                         {{-- Trigger del Select --}}
-                                        <div @click="open = !open" 
+                                        <div @click="open = !open"
                                              @click.away="open = false"
                                              :class="hasError('id', index) ? 'border-error-300 focus:ring-error-500/10' : 'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10'"
                                              class="relative flex h-11 w-full cursor-pointer items-center justify-between rounded-lg border bg-white px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
@@ -162,11 +167,11 @@
                                         <p x-show="hasError('id', index)" x-text="hasError('id', index) ? getError('id', index) : ''" class="mt-1.5 text-xs text-error-500"></p>
                                     </div>
                                 </div>
-                                
+
                                 {{-- PRECIO DE COSTO --}}
                                 <div class="w-full md:w-2/5">
                                     <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Precio pactado</label>
-                                    <input type="number" step="0.01" x-model="supplier.price" x-bind:name="'suppliers[' + index + '][price]'" placeholder="0.00" 
+                                    <input type="number" step="0.01" x-model="supplier.price" x-bind:name="'suppliers[' + index + '][price]'" placeholder="0.00"
                                            :class="hasError('price', index) ? 'border-error-300 focus:border-error-300 focus:ring-error-500/10' : 'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10'"
                                            class="h-11 w-full rounded-lg border bg-white px-4 py-2.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 outline-none">
                                     <p x-show="hasError('price', index)" x-text="hasError('price', index) ? getError('price', index) : ''" class="mt-1.5 text-xs text-error-500"></p>

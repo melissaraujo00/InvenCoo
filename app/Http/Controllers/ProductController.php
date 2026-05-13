@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Category;
 use App\Models\Brand;
+use App\Models\Unit;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -31,9 +32,10 @@ class ProductController extends Controller
     {
         $suppliers = Supplier::all();
         $categories = Category::all();
+        $units = Unit::orderBy('sort_order')->get();
         $brands = Brand::all();
 
-        return view('pages.products.create', compact('suppliers', 'categories', 'brands'));
+        return view('pages.products.create', compact('suppliers', 'categories','units', 'brands'));
     }
 
     public function store(StoreProductRequest $request)
@@ -85,9 +87,9 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request, Product $product)
     {
         $validated = $request->validated();
-        
+
         // ELIMINADA la reasignación de office_id. Un producto no cambia de oficina solo por ser editado.
-        
+
         $product->update($validated);
 
         if ($request->has('suppliers')) {

@@ -76,9 +76,15 @@
 
                     {{-- Unidad --}}
                     <td class="px-4 py-4 whitespace-nowrap">
+                        @if($product->unit)
                         <span class="text-sm text-gray-700 dark:text-gray-300">
-                            {{ $product->unit }}
+                            {{ $product->unit->name }} ({{ $product->unit->symbol }})
                         </span>
+
+                        @else
+                            —
+                        @endif
+
                     </td>
 
                     {{-- Oficina --}}
@@ -117,15 +123,15 @@
                             </a>
 
                             {{-- Modal de Eliminar --}}
-                            <x-modal.confirmation 
-                                title="Eliminar Producto" 
-                                :message="'¿Estás seguro que deseas eliminar el producto'" 
+                            <x-modal.confirmation
+                                title="Eliminar Producto"
+                                :message="'¿Estás seguro que deseas eliminar el producto'"
                                 :itemName="$product->code . ' - ' . $product->name"
-                                warning="Se eliminará del inventario y no podrá ser facturado." 
+                                warning="Se eliminará del inventario y no podrá ser facturado."
                                 confirmText="Sí, eliminar"
-                                confirmVariant="danger" 
-                                :action="route('products.destroy', $product->id)" 
-                                method="DELETE" 
+                                confirmVariant="danger"
+                                :action="route('products.destroy', $product->id)"
+                                method="DELETE"
                                 icon="danger"
                             >
                                 <x-slot name="trigger">

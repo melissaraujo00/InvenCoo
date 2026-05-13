@@ -15,7 +15,7 @@ class Product extends Model
         'category_id',
         'brand_id',
         'stock_minimun',
-        'unit',
+        'unit_id',
         'stock',
         'office_id',
 
@@ -67,7 +67,10 @@ class Product extends Model
         return $this->belongsTo(Office::class);
     }
 
-
+    public function unit() : BelongsTo
+    {
+        return $this->belongsTo(Unit::class);
+    }
 
 }
 

@@ -3,6 +3,7 @@
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Office;
+use App\Models\Unit;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -20,7 +21,7 @@ return new class extends Migration
             $table->string('name', 50);
             $table->foreignIdFor(Category::class)->constrained();
             $table->foreignIdFor(Brand::class)->nullable()->constrained();
-            $table->string('unit', 50);
+            $table->foreignIdFor(Unit::class)->constrained();
             $table->integer('stock_minimun');
             $table->integer('stock');
             $table->foreignIdFor(Office::class);

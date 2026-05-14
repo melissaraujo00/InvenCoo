@@ -91,7 +91,22 @@
                 <div class="z-1 flex flex-col items-center justify-center px-12 text-center">
                     <x-common.common-grid-shape/>
                     <div class="mb-8 p-4 bg-white/10 rounded-2xl backdrop-blur-sm">
-                        <svg class="w-16 h-16 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-10 h-16 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">InvenCoo</h2>
+                    <p class="text-gray-500 dark:text-gray-400 max-w-sm">
+                        Plataforma centralizada para el control de inventarios, compras y distribución operativa.
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-brand-950 relative hidden h-full w-full items-center lg:grid lg:w-1/2 dark:bg-gray-800/50 border-l border-gray-100 dark:border-gray-800">
+                <div class="z-1 flex flex-col items-center justify-center px-12 text-center">
+                    <x-common.common-grid-shape/>
+                    <div class="mb-8 p-4 bg-white/10 rounded-2xl backdrop-blur-sm">
+                        <svg class="w-10 h-16 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
                     </div>

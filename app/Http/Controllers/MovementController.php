@@ -41,7 +41,7 @@ class MovementController extends Controller
     {
         $types = Type::all();
         $products = Product::all();
-        
+
         return view('pages.movements.create', compact('types', 'products'));
     }
 
@@ -53,7 +53,7 @@ class MovementController extends Controller
         try {
             DB::transaction(function () use ($validated, $user) {
                 $movement = Movement::create([
-                    'office_id' => $user->office_id, 
+                    'office_id' => $user->office_id,
                     'date_movement' => $validated['date_movement'],
                     'type_id' => $validated['type_id'],
                     'user_id' => $user->id,
@@ -79,7 +79,7 @@ class MovementController extends Controller
                     $lastInputDetail = MovementDetail::where('product_id', $product->id)
                         ->whereHas('movement', fn($q) => $q->where('input_type', 'E'))
                         ->orderBy('id', 'desc')->first();
-                        
+
                     $cost = $lastInputDetail ? $lastInputDetail->unit_price : 0;
 
                     MovementDetail::create([
@@ -108,7 +108,7 @@ class MovementController extends Controller
     private function generateTransactionId($inputType)
     {
         $today = now()->format('Ymd');
-        $prefix = "AJU-{$inputType}-{$today}-"; 
+        $prefix = "AJU-{$inputType}-{$today}-";
 
         $lastMovement = Movement::where('transaction_id', 'LIKE', $prefix . '%')
             ->orderBy('transaction_id', 'desc')

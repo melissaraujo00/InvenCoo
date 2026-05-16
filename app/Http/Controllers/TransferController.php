@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Transfer\CreateTransferAction;
+use App\Actions\Transfer\ReceiveTransferAction;
+use App\Actions\Transfer\ShipTransferAction;
 use App\Enums\StatusEnum;
 use App\Models\Office;
 use App\Models\Product;
@@ -78,7 +81,7 @@ class TransferController extends Controller
                 })
                 ->orderBy('id', 'desc')
                 ->first();
-                
+
             // CORRECCIÓN: Si no hay movimientos, leemos el stock general como fallback preventivo
             $product->available_stock = $lastMovementDetail ? $lastMovementDetail->stock_after : ($product->stock ?? 0);
         });
@@ -99,41 +102,9 @@ class TransferController extends Controller
             'products.*.quantity' => 'required|integer|min:1',
         ]);
 
-        DB::transaction(function () use ($validated, $user) {
-            $transfer = Transfer::create([
-                'originating_branch' => 1,
-                'destination_branch' => $user->office_id,
-                'requesting_user' => $user->id,
-                'creation_date' => now(),
-                'status' => StatusEnum::PENDING,
-            ]);
-
-            foreach ($validated['products'] as $item) {
-                TransferDetail::create([
-                    'transfer_id' => $transfer->id,
-                    'product_id' => $item['product_id'],
-                    'quantity_requested' => $item['quantity'],
-                    'quantity_sent' => 0,
-                ]);
-            }
-
-            // CORRECCIÓN: Notificaciones asiladas en try-catch para evitar Error 500 por cURL
-            try {
-                $admins = User::role('Administrador')->get();
-                Notification::send($admins, new TransferRequested($transfer));
-
-                foreach ($admins as $admin) {
-                    if ($admin->number) {
-                        $admin->notify(new TransferWhatsappNotification($transfer, 'transfer_request_admin', [
-                            (string) $transfer->id,
-                            route('transfers.show', $transfer)
-                        ]));
-                    }
-                }
-            } catch (\Exception $e) {
-                Log::error('Fallo al enviar notificación de transferencia (Store): ' . $e->getMessage());
-            }
-        });
+        app(CreateTransferAction::class)->execute(
+            $validated['products'], $request->user()->id, $request->user()->office_id
+        );
 
         return redirect()->route('transfers.index')->with('success', 'Solicitud creada. El administrador ha sido notificado.');
     }
@@ -163,7 +134,7 @@ class TransferController extends Controller
                     if ($sent > $requested) {
                         throw new \Exception('La cantidad enviada no puede superar la solicitada.');
                     }
-                    
+
                     // Validación de stock real con bloqueo
                     $product = Product::lockForUpdate()->find($detail->product_id);
                     if ($sent > $product->stock) {
@@ -226,57 +197,7 @@ class TransferController extends Controller
             abort(403, 'No autorizado.');
         }
 
-        DB::transaction(function () use ($transfer) {
-            $outMovement = Movement::create([
-                'office_id' => $transfer->originating_branch,
-                'date_movement' => now(),
-                'type_id' => Type::firstOrCreate(['name' => 'Transferencia Salida'])->id,
-                'user_id' => Auth::id(),
-                'transaction_id' => 'TRF-OUT-' . $transfer->id,
-                'description' => 'Salida por transferencia #' . $transfer->id,
-                'input_type' => 'S',
-                'origin_office_id' => $transfer->originating_branch,
-                'destination_office_id' => $transfer->destination_branch,
-            ]);
-
-            foreach ($transfer->details as $detail) {
-                $qty = $detail->quantity_sent;
-                if ($qty > 0) {
-                    $product = Product::lockForUpdate()->find($detail->product_id);
-                    $product->decrement('stock', $qty);
-
-                    // CORRECCIÓN: Arrastrar el costo promedio de la última compra en lugar de enviarlo a costo $0.00
-                    $lastInputDetail = MovementDetail::where('product_id', $detail->product_id)
-                        ->whereHas('movement', function ($q) { $q->where('input_type', 'E'); })
-                        ->orderBy('id', 'desc')->first();
-                    $cost = $lastInputDetail ? $lastInputDetail->unit_price : 0;
-
-                    MovementDetail::create([
-                        'movement_id' => $outMovement->id,
-                        'product_id' => $detail->product_id,
-                        'quantity' => $qty,
-                        'unit_price' => $cost,
-                        'subtotal' => $cost * $qty,
-                        'stock_after' => $product->stock,
-                    ]);
-                }
-            }
-
-            $transfer->update([
-                'shipping_date' => now(),
-                'out_movement_id' => $outMovement->id,
-                'status' => StatusEnum::SHIPPED,
-            ]);
-        });
-
-        try {
-            $requester = User::find($transfer->requesting_user);
-            if ($requester && $requester->number) {
-                $requester->notify(new TransferWhatsappNotification($transfer, 'transfer_ready_for_ship', [(string) $transfer->id, route('transfers.show', $transfer)]));
-            }
-        } catch (\Exception $e) {
-            Log::error('Fallo WhatsApp en Ship: ' . $e->getMessage());
-        }
+        app(ShipTransferAction::class)->execute($transfer);
 
         return redirect()->route('transfers.show', $transfer)->with('success', 'Transferencia enviada con costos registrados.');
     }
@@ -288,61 +209,7 @@ class TransferController extends Controller
             abort(403, 'No autorizado.');
         }
 
-        DB::transaction(function () use ($transfer) {
-            // CORRECCIÓN: Creación del Movimiento de Entrada (E) para la sucursal de destino (El agujero negro sellado)
-            $inMovement = Movement::create([
-                'office_id' => $transfer->destination_branch,
-                'date_movement' => now(),
-                'type_id' => Type::firstOrCreate(['name' => 'Transferencia Entrada'])->id,
-                'user_id' => Auth::id(),
-                'transaction_id' => 'TRF-IN-' . $transfer->id,
-                'description' => 'Entrada por transferencia #' . $transfer->id,
-                'input_type' => 'E',
-                'origin_office_id' => $transfer->originating_branch,
-                'destination_office_id' => $transfer->destination_branch,
-            ]);
-
-            foreach ($transfer->details as $detail) {
-                $qty = $detail->quantity_sent;
-                if ($qty > 0) {
-                    $product = Product::lockForUpdate()->find($detail->product_id);
-                    $product->increment('stock', $qty);
-
-                    // Recuperar el costo exacto con el que salió de bodega para que el restaurante asimile ese valor
-                    $outDetail = MovementDetail::where('movement_id', $transfer->out_movement_id)
-                        ->where('product_id', $detail->product_id)
-                        ->first();
-                    $cost = $outDetail ? $outDetail->unit_price : 0;
-
-                    MovementDetail::create([
-                        'movement_id' => $inMovement->id,
-                        'product_id' => $detail->product_id,
-                        'quantity' => $qty,
-                        'unit_price' => $cost,
-                        'subtotal' => $cost * $qty,
-                        'stock_after' => $product->stock,
-                    ]);
-                }
-            }
-
-            $transfer->update([
-                'receipt_date' => now(),
-                'status' => StatusEnum::RECEIVED,
-            ]);
-        });
-
-        try {
-            $admins = User::role('Administrador')->get();
-            foreach ($admins as $admin) {
-                if ($admin->number) {
-                    $admin->notify(new TransferWhatsappNotification($transfer, 'transfer_received_admi', [(string) $transfer->id, route('transfers.show', $transfer)]));
-                }
-                // Si existe la clase TransferReceived, descomentar:
-                // $admin->notify(new TransferReceived($transfer)); 
-            }
-        } catch (\Exception $e) {
-            Log::error('Fallo WhatsApp en Receive: ' . $e->getMessage());
-        }
+        app(ReceiveTransferAction::class)->execute($transfer);
 
         return redirect()->route('transfers.index')->with('success', 'Transferencia recibida e ingresada al Kardex local con éxito.');
     }

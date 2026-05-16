@@ -73,24 +73,25 @@
             </div>
         </div>
 
-        {{-- Tabla de productos (sin columna Subtotal) --}}
+        {{-- Tabla de productos --}}
         <x-tables.table
             title="Productos del Movimiento"
             :headers="['Producto', 'Cantidad', 'Precio Unitario', 'Stock después']"
+            :show-actions="false"
             emptyMessage="No hay productos en este movimiento"
         >
             @foreach($movement->details as $detail)
                 <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 text-left">
                         {{ $detail->product->name ?? 'N/A' }}
                     </td>
-                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 text-left">
                         {{ $detail->quantity }}
                     </td>
-                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        {{ number_format($detail->unit_price, 2) }}
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 text-left">
+                        ${{ number_format($detail->unit_price, 2) }}
                     </td>
-                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 text-left font-bold">
                         {{ $detail->stock_after }}
                     </td>
                 </tr>

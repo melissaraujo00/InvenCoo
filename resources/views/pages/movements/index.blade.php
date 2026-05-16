@@ -8,7 +8,9 @@
             <h2 class="text-title-md2 font-bold text-gray-800 dark:text-white/90">
                 Listado de Movimientos
             </h2>
-            <div></div>
+            <x-form.button href="{{ route('movements.create') }}" variant="primary" size="md">
+                Nuevo Ajuste Manual
+            </x-form.button>
         </div>
 
         <x-tables.table

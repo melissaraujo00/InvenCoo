@@ -53,17 +53,16 @@ class BrandController extends Controller
 
     public function destroy(Brand $brand)
     {
-        try {
-            $brand->delete();
+        // 1. Verificas el estado antes de actuar
+        if ($brand->products()->exists()) {
             return to_route('brands.index')
-                ->with('success', 'Marca eliminada exitosamente.');
-                
-        } catch (\Illuminate\Database\QueryException $e) {
-            if ($e->getCode() == "23000") {
-                return to_route('brands.index')
-                    ->with('error', 'No puedes eliminar esta marca porque ya tiene productos vinculados.');
-            }
-            throw $e;
+                ->with('error', 'No puedes eliminar esta marca porque tiene productos vinculados.');
+        }
+
+        // 2. Ejecutas la acción de forma segura
+        $brand->delete();
+
+        return to_route('brands.index')
+            ->with('success', 'Marca eliminada exitosamente.');
         }
     }
-}

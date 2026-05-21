@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Brand;
 use App\Models\Unit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -110,16 +111,21 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        try {
+        if ($product->details()->exists() ||
+        $product->movementDetails()->exists() ||
+        $product->transferDetails()->exists()) {
+
+        return to_route('products.index')
+            ->with('error', 'No puedes eliminar este producto porque tiene compras, movimientos o transferencias asociadas.');
+    }
+
+
+        DB::transaction(function () use ($product) {
             $product->suppliers()->detach();
             $product->delete();
-            return to_route('products.index')->with('success', 'Producto eliminado exitosamente.');
-        } catch (\Illuminate\Database\QueryException $e) {
-            if ($e->getCode() == "23000") {
-                return to_route('products.index')
-                    ->with('error', 'No puedes eliminar este producto porque tiene movimientos de inventario o ventas asociadas.');
-            }
-            throw $e;
+        });
+
+        return to_route('products.index')
+            ->with('success', 'Producto eliminado exitosamente.');
         }
-    }
 }

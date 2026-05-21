@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->String('name', 50);
             $table->Text('descripcion')->nullable();
+            $table->boolean('is_main')->default(false);
             $table->timestamps();
         });
     }

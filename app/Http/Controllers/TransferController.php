@@ -6,24 +6,18 @@ use App\Actions\Transfer\CreateTransferAction;
 use App\Actions\Transfer\ReceiveTransferAction;
 use App\Actions\Transfer\ShipTransferAction;
 use App\Enums\StatusEnum;
+use App\Exceptions\BusinessRuleException;
 use App\Models\Office;
 use App\Models\Product;
 use App\Models\Transfer;
 use App\Models\TransferDetail;
-use App\Models\Movement;
-use App\Models\MovementDetail;
-use App\Models\Type;
 use App\Models\User;
 use App\Notifications\TransferApproved;
 use App\Notifications\TransferReadyToShip;
-use App\Notifications\TransferReceived;
-use App\Notifications\TransferRequested;
 use App\Notifications\TransferWhatsappNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 
 class TransferController extends Controller
 {
@@ -70,20 +64,19 @@ class TransferController extends Controller
             abort(403, 'No autorizado.');
         }
 
-        $sourceOffice = Office::find(1); // Cooperativa
+        $sourceOffice = Office::where('is_main', true)->firstOrFail(); // Cooperativa
         $destinationOffice = Office::find($user->office_id);
 
-        $products = Product::all();
-        $products->each(function ($product) use ($sourceOffice) {
-            $lastMovementDetail = MovementDetail::where('product_id', $product->id)
-                ->whereHas('movement', function ($query) use ($sourceOffice) {
-                    $query->where('office_id', $sourceOffice->id);
-                })
-                ->orderBy('id', 'desc')
-                ->first();
+        $products = Product::with([
+        'movementDetails' => function ($query) use ($sourceOffice) {
+            $query->whereHas('movement', fn($q) => $q->where('office_id', $sourceOffice->id))
+                  ->latest('id'); // Trae solo los más recientes para mapearlos en memoria
+            }
+        ])->get();
 
-            // CORRECCIÓN: Si no hay movimientos, leemos el stock general como fallback preventivo
-            $product->available_stock = $lastMovementDetail ? $lastMovementDetail->stock_after : ($product->stock ?? 0);
+        $products->each(function ($product) {
+        $lastMovement = $product->movementDetails->first();
+        $product->available_stock = $lastMovement ? $lastMovement->stock_after : ($product->stock ?? 0);
         });
 
         return view('pages.transfers.create', compact('sourceOffice', 'destinationOffice', 'products'));
@@ -138,8 +131,7 @@ class TransferController extends Controller
                     // Validación de stock real con bloqueo
                     $product = Product::lockForUpdate()->find($detail->product_id);
                     if ($sent > $product->stock) {
-                        throw new \Exception("No hay stock suficiente de {$product->name} en la cooperativa para aprobar {$sent} unidades. Stock disponible: {$product->stock}.");
-                    }
+                            throw new BusinessRuleException("No hay stock suficiente de {$product->name} en la cooperativa. Stock disponible: {$product->stock}.");                    }
 
                     $detail->update(['quantity_sent' => $sent]);
 
@@ -170,10 +162,9 @@ class TransferController extends Controller
                     }
                 }
             });
-        } catch (\Exception $e) {
-            // Si la excepción estalla, la atrapamos aquí, abortamos la transacción de DB
-            // y redireccionamos al usuario con el mensaje de error para que lo corrija.
-            return redirect()->route('transfers.show', $transfer)->with('error', $e->getMessage());
+        } catch (BusinessRuleException $e) {
+            return redirect()->route('transfers.show', $transfer)
+                ->with('error', $e->getMessage());
         }
 
         return redirect()->route('transfers.show', $transfer)->with('success', 'Transferencia procesada y validada correctamente.');

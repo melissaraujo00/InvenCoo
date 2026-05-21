@@ -14,7 +14,7 @@ class OfficeSeeder extends Seeder
     public function run(): void
     {
         // Database/Seeders/OfficeSeeder.php
-        Office::create(['id' => 1, 'name' => 'Cooperativa']);
+        Office::create(['id' => 1, 'name' => 'Cooperativa', 'is_main' => true]);
         Office::create(['id' => 2, 'name' => 'Restaurante La Finca']);
     }
 }

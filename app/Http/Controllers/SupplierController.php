@@ -57,17 +57,15 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier)
     {
-        try {
-            $supplier->delete();
-            return to_route('suppliers.index')
-                ->with('success', 'Proveedor eliminado exitosamente.');
-
-        } catch (\Illuminate\Database\QueryException $e) {
-            if ($e->getCode() == "23000") {
-                return to_route('suppliers.index')
-                    ->with('error', 'No puedes eliminar este proveedor porque ya tiene productos vinculados.');
-            }
-            throw $e;
+        if ($supplier->products()->exists()) {
+        return to_route('suppliers.index')
+            ->with('error', 'No puedes eliminar este proveedor porque tiene productos vinculados en el catálogo.');
         }
+
+        // 2. Ejecuta la eliminación segura
+        $supplier->delete();
+
+        return to_route('suppliers.index')
+            ->with('success', 'Proveedor eliminado exitosamente.');
     }
 }

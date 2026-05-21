@@ -51,10 +51,10 @@ class RoleController extends Controller
     {
         // Cargamos permisos
         $role->load('permissions');
-        
+
         // Cargamos los usuarios que tienen este rol específico (con paginación)
         $users = \App\Models\User::role($role->name)->with('office')->paginate(10);
-        
+
         return view('pages.roles.show', compact('role', 'users'));
     }
 
@@ -85,19 +85,17 @@ class RoleController extends Controller
 
     public function destroy(Role $role)
     {
-        // 1. Proteger roles críticos del sistema
-        if (in_array($role->name, ['Administrador', 'Admin'])) {
-            return redirect()->route('roles.index')
-                ->with('error', 'No se puede eliminar un rol base del sistema.');
+        if ($role->is_system) {
+        return redirect()->route('roles.index')
+            ->with('error', 'No se puede eliminar un rol base del sistema.');
         }
 
-        // 2. NUEVA REGLA: Prevenir la eliminación de roles en uso
-        if ($role->users()->count() > 0) {
+        // 2. Prevenir la eliminación de roles en uso
+        if ($role->users()->exists()) { // exists() es más rápido en SQL que count() > 0
             return redirect()->route('roles.index')
-                ->with('error', 'Acción denegada: Hay usuarios que actualmente tienen asignado este rol. Reasigna a los usuarios antes de eliminarlo.');
+                ->with('error', 'Acción denegada: Hay usuarios que actualmente tienen asignado este rol.');
         }
 
-        // 3. Eliminación segura
         $role->delete();
         return redirect()->route('roles.index')
             ->with('success', 'Rol eliminado exitosamente.');

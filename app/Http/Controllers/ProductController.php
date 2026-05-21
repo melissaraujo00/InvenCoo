@@ -42,35 +42,38 @@ class ProductController extends Controller
     public function store(StoreProductRequest $request)
     {
         $validated = $request->validated();
-
-        $lastProduct = Product::orderBy('id', 'desc')->first();
-        $lastCode = $lastProduct ? $lastProduct->code : 'PROD-0000';
-        $lastNumber = (int) substr($lastCode, 5);
-        $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        $validated['code'] = 'PROD-' . $newNumber;
-
         $validated['office_id'] = $request->user()->office_id;
 
-        $product = Product::create($validated);
+        DB::transaction(function () use ($validated, $request) {
 
-        if ($request->has('suppliers') && !empty($request->suppliers)) {
-            $suppliersData = [];
-            foreach ($request->suppliers as $supplier) {
-                if (!empty($supplier['id'])) {
-                    $suppliersData[$supplier['id']] = ['price' => $supplier['price']];
+            // A. Bloqueo Pesimista: Nadie más lee el último ID hasta que YO termine de insertar.
+            $lastProduct = Product::lockForUpdate()->orderBy('id', 'desc')->first();
+            $lastNumber = $lastProduct ? (int) substr($lastProduct->code, 5) : 0;
+            $validated['code'] = 'PROD-' . str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+
+            // B. Creación: Insertamos el producto (El candado SIGUE ACTIVO)
+            $product = Product::create($validated);
+
+            // C. Relaciones: Insertamos la data de la tabla pivote
+            if ($request->has('suppliers') && !empty($request->suppliers)) {
+                $suppliersData = [];
+                foreach ($request->suppliers as $supplier) {
+                    if (!empty($supplier['id'])) {
+                        $suppliersData[$supplier['id']] = ['price' => $supplier['price']];
+                    }
+                }
+                if (!empty($suppliersData)) {
+                    $product->suppliers()->attach($suppliersData);
                 }
             }
-            if (!empty($suppliersData)) {
-                $product->suppliers()->attach($suppliersData);
-            }
-        }
+
+        });
 
         return to_route('products.index')->with('success', 'Producto creado exitosamente.');
     }
 
     public function show(Product $product)
     {
-        // Se mantiene para el futuro o si decides usar una vista dedicada
         $product->load(['category', 'brand', 'office', 'suppliers']);
         return view('pages.products.show', compact('product'));
     }
@@ -117,7 +120,7 @@ class ProductController extends Controller
 
         return to_route('products.index')
             ->with('error', 'No puedes eliminar este producto porque tiene compras, movimientos o transferencias asociadas.');
-    }
+        }
 
 
         DB::transaction(function () use ($product) {
@@ -127,5 +130,6 @@ class ProductController extends Controller
 
         return to_route('products.index')
             ->with('success', 'Producto eliminado exitosamente.');
-        }
+    }
+
 }

@@ -47,7 +47,7 @@
         {{-- Historial de envíos realizados --}}
         <div>
             <h2 class="text-title-md2 font-bold text-gray-800 dark:text-white/90 mb-4">📜 Historial de envíos</h2>
-            @if($history->count())
+            @if($transfers->count())
                 <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] overflow-hidden">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-50 dark:bg-gray-800/50">
@@ -59,7 +59,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                            @foreach($history as $transfer)
+                            @foreach($transfers as $transfer)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
                                     <td class="px-4 py-3 text-sm">{{ $transfer->id }}</td>
                                     <td class="px-4 py-3 text-sm">{{ $transfer->destinationBranch->name ?? 'N/A' }}</td>

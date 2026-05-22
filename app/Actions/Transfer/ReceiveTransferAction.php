@@ -10,9 +10,12 @@ use App\Models\Transfer;
 use App\Models\Type;
 use App\Notifications\TransferWhatsappNotification;
 use App\Models\User;
+use App\Notifications\TransferApproved;
+use App\Notifications\TransferReceived;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class ReceiveTransferAction
 {
@@ -64,22 +67,8 @@ class ReceiveTransferAction
                 'status'       => StatusEnum::RECEIVED,
             ]);
         });
-
-        // Notificaciones FUERA de la transacción: un fallo de cURL no revierte la recepción
-        try {
-            $admins = User::role('Administrador')->get();
-
-            foreach ($admins as $admin) {
-                if ($admin->number) {
-                    $admin->notify(new TransferWhatsappNotification(
-                        $transfer,
-                        'transfer_received_admi',
-                        [(string) $transfer->id, route('transfers.show', $transfer)]
-                    ));
-                }
-            }
-        } catch (\Exception $e) {
-            Log::error('Fallo WhatsApp en ReceiveTransferAction: ' . $e->getMessage());
-        }
+// Notificaciones FUERA de la transacción
+        $admins = User::role('Administrador')->get();
+        Notification::send($admins, new TransferReceived($transfer));
     }
 }

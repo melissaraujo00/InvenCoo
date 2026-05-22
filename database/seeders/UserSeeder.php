@@ -53,7 +53,8 @@ class UserSeeder extends Seeder
             'crear movimientos',
             'editar movimientos',
             'eliminar movimientos',
-            'ver proveedores'
+            'ver proveedores',
+            'Aprobar'
 
         ];
 

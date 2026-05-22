@@ -4,10 +4,18 @@
 namespace App\Notifications;
 
 use App\Models\Transfer;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WhatsApp\Component;
+use NotificationChannels\WhatsApp\WhatsAppChannel;
+use NotificationChannels\WhatsApp\WhatsAppTemplate;
 
-class TransferApproved extends Notification
+
+class TransferApproved extends Notification implements ShouldQueue
 {
+    use Queueable;
+
     protected $transfer;
 
     public function __construct(Transfer $transfer)
@@ -17,7 +25,13 @@ class TransferApproved extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];
+        $channels = ['database'];
+
+         if (!empty($notifiable->number)) {
+            $channels[] = WhatsAppChannel::class;
+        }
+
+        return $channels;
     }
 
     public function toDatabase($notifiable)
@@ -29,5 +43,15 @@ class TransferApproved extends Notification
             'type' => 'transfer_approved',
             'url' => route('transfers.show', $this->transfer),
         ];
+    }
+
+        public function toWhatsApp($notifiable)
+    {
+        return WhatsAppTemplate::create()
+            ->name('transfer_approved')
+            ->to($notifiable->number)
+            ->language('es_MX')
+            ->body(Component::text((string) $this->transfer->id))
+            ->body(Component::text(route('transfers.show', $this->transfer)));
     }
 }

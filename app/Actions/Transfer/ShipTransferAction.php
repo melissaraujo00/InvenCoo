@@ -8,11 +8,12 @@ use App\Models\MovementDetail;
 use App\Models\Product;
 use App\Models\Transfer;
 use App\Models\Type;
-use App\Notifications\TransferWhatsappNotification;
 use App\Models\User;
+use App\Notifications\TransferReadyToShip;
+use App\Notifications\TransferShipped;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class ShipTransferAction
 {
@@ -66,19 +67,10 @@ class ShipTransferAction
             ]);
         });
 
-        // Notificaciones FUERA de la transacción: un fallo de cURL no revierte el envío
-        try {
-            $requester = User::find($transfer->requesting_user);
-
-            if ($requester?->number) {
-                $requester->notify(new TransferWhatsappNotification(
-                    $transfer,
-                    'transfer_ready_for_ship',
-                    [(string) $transfer->id, route('transfers.show', $transfer)]
-                ));
-            }
-        } catch (\Exception $e) {
-            Log::error('Fallo WhatsApp en ShipTransferAction: ' . $e->getMessage());
+        // Notificaciones FUERA de la transacción
+        $requester = User::find($transfer->requesting_user);
+        if ($requester) {
+            Notification::send($requester, new TransferShipped($transfer));
         }
     }
 }

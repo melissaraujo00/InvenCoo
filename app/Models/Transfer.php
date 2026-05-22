@@ -11,8 +11,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 class Transfer extends Model
 {
     use AuthorizesRequests;
-    const COOPERATIVE_ID = 1;
-    const RESTAURANT_ID = 2;
+
     protected $fillable = [
         'originating_branch',
         'destination_branch',
@@ -66,5 +65,23 @@ class Transfer extends Model
     public function inMovement(): BelongsTo
     {
         return $this->belongsTo(Movement::class, 'in_movement_id');
+    }
+
+    public function scopeForUserContext($query, $user)
+    {
+        $role = $user->getRoleNames()->first();
+
+        return match ($role) {
+            'Administrador' => $query->with(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product'])
+                                    ->orderBy('creation_date', 'desc'),
+
+            'Bodega' => $query->with(['destinationBranch', 'requestingUser', 'details.product'])
+                            ->where('originating_branch', $user->office_id)
+                            ->orderBy('creation_date', 'desc'),
+
+            default => $query->with(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product'])
+                            ->where('destination_branch', $user->office_id)
+                            ->orderBy('creation_date', 'desc'),
+        };
     }
 }

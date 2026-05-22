@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Requests;
 
+use App\Enums\StatusEnum;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ApproveTransferRequest extends FormRequest
@@ -8,7 +9,7 @@ class ApproveTransferRequest extends FormRequest
     public function authorize()
     {
         return $this->user()->hasRole('Administrador') &&
-               $this->transfer->status === \App\Enums\StatusEnum::PENDING;
+               $this->transfer->status === StatusEnum::PENDING;
     }
 
     public function rules()

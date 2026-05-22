@@ -75,17 +75,17 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category)
     {
-        try {
-            $category->delete();
+        // 1. Verificas el estado antes de actuar
+        if ($category->products()->exists()) {
             return to_route('categories.index')
-                ->with('success', 'Categoría eliminada exitosamente.');
-                
-        } catch (\Illuminate\Database\QueryException $e) {
-            if ($e->getCode() == "23000") {
-                return to_route('categories.index')
-                    ->with('error', 'No puedes eliminar esta categoría porque ya tiene productos asignados.');
-            }
-            throw $e;
+                ->with('error', 'No puedes eliminar esta categoría porque ya tiene productos asignados.');
         }
+
+        // 2. Ejecutas la acción de forma segura
+        $category->delete();
+
+        return to_route('categories.index')
+            ->with('success', 'Categoría eliminada exitosamente.');
+
     }
 }

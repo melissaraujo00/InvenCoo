@@ -39,23 +39,12 @@ class CreateTransferAction
         });
 
         // Notificaciones FUERA de la transacción:
-        // Si cURL falla, la transferencia ya quedó guardada correctamente
-        try {
-            $admins = User::role('Administrador')->get();
-            Notification::send($admins, new TransferRequested($transfer));
+        // Notificaciones FUERA de la transacción
+        $admins = User::role('Administrador')->get();
 
-            foreach ($admins as $admin) {
-                if ($admin->number) {
-                    $admin->notify(new TransferWhatsappNotification(
-                        $transfer,
-                        'transfer_request_admin',
-                        [(string) $transfer->id, route('transfers.show', $transfer)]
-                    ));
-                }
-            }
-        } catch (\Exception $e) {
-            Log::error('Fallo al enviar notificación en CreateTransferAction: ' . $e->getMessage());
-        }
+        // Mantienes la notificación genérica si la necesitas para la base de datos/campanita
+        Notification::send($admins, new TransferRequested($transfer));
+
 
         return $transfer;
     }

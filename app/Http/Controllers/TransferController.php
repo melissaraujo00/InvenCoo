@@ -2,67 +2,50 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Transfer\ApproveTransferAction;
 use App\Actions\Transfer\CreateTransferAction;
 use App\Actions\Transfer\ReceiveTransferAction;
 use App\Actions\Transfer\ShipTransferAction;
 use App\Enums\StatusEnum;
 use App\Exceptions\BusinessRuleException;
+use App\Http\Requests\ApproveTransferRequest;
+use App\Http\Requests\StoreTransferRequest;
 use App\Models\Office;
 use App\Models\Product;
 use App\Models\Transfer;
-use App\Models\TransferDetail;
-use App\Models\User;
-use App\Notifications\TransferApproved;
-use App\Notifications\TransferReadyToShip;
-use App\Notifications\TransferWhatsappNotification;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class TransferController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
         $user = Auth::user();
-        $role = $user->getRoleNames()->first();
 
-        if ($role === 'Administrador') {
-            $transfers = Transfer::with(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product'])
-                ->orderBy('creation_date', 'desc')
-                ->paginate(15);
-            return view('pages.transfers.index', compact('transfers'));
-        }
+        // 1. El Scope del modelo resuelve el historial general (Paginado)
+        $transfers = Transfer::forUserContext($user)->paginate(15);
 
-        if ($role === 'Bodega') {
+        // 2. Si es Bodega, la vista exige sus envíos pendientes
+        if ($user->hasRole('Bodega')) {
+
             $pendingShipments = Transfer::with(['destinationBranch', 'requestingUser', 'details.product'])
                 ->where('originating_branch', $user->office_id)
-                ->whereIn('status', [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED])
-                ->orderBy('creation_date', 'asc')
+                ->whereIn('status', [\App\Enums\StatusEnum::APPROVED, \App\Enums\StatusEnum::PARTIALLY_APPROVED])
+                ->orderBy('updated_at', 'desc')
                 ->get();
 
-            $history = Transfer::with(['destinationBranch', 'requestingUser', 'details.product'])
-                ->where('originating_branch', $user->office_id)
-                ->whereIn('status', [StatusEnum::SHIPPED, StatusEnum::RECEIVED, StatusEnum::REJECTED])
-                ->orderBy('creation_date', 'desc')
-                ->get();
-
-            return view('pages.transfers.bodega_index', compact('pendingShipments', 'history'));
+            return view('pages.transfers.bodega_index', compact('transfers', 'pendingShipments'));
         }
 
-        $transfers = Transfer::with(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product'])
-            ->where('destination_branch', $user->office_id)
-            ->orderBy('creation_date', 'desc')
-            ->paginate(15);
-
+        // 3. Para el resto de roles (Restaurante, Administrador)
         return view('pages.transfers.index', compact('transfers'));
     }
 
     public function create()
     {
+        Gate::authorize('create', Transfer::class);
         $user = Auth::user();
-        if (!$user->hasRole('Administrador Restaurante')) {
-            abort(403, 'No autorizado.');
-        }
 
         $sourceOffice = Office::where('is_main', true)->firstOrFail(); // Cooperativa
         $destinationOffice = Office::find($user->office_id);
@@ -82,111 +65,47 @@ class TransferController extends Controller
         return view('pages.transfers.create', compact('sourceOffice', 'destinationOffice', 'products'));
     }
 
-    public function store(Request $request)
+    public function store(StoreTransferRequest $request)
     {
-        $user = Auth::user();
-        if (!$user->hasRole('Administrador Restaurante')) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'products' => 'required|array|min:1',
-            'products.*.product_id' => 'required|exists:products,id',
-            'products.*.quantity' => 'required|integer|min:1',
-        ]);
-
         app(CreateTransferAction::class)->execute(
-            $validated['products'], $request->user()->id, $request->user()->office_id
+            $request->validated()['products'],
+            $request->user()->id,
+            $request->user()->office_id
         );
 
-        return redirect()->route('transfers.index')->with('success', 'Solicitud creada. El administrador ha sido notificado.');
+        return redirect()->route('transfers.index')
+            ->with('success', 'Solicitud creada con éxito.');
     }
 
-    public function approve(Request $request, Transfer $transfer)
+    public function approve(ApproveTransferRequest $request, Transfer $transfer)
     {
-        if (!Auth::user()->hasRole('Administrador') || $transfer->status !== StatusEnum::PENDING) {
-            abort(403, 'No autorizado.');
-        }
-
-        $validated = $request->validate([
-            'details' => 'required|array',
-            'details.*.id' => 'required|exists:transfer_details,id',
-            'details.*.quantity_sent' => 'required|integer|min:0',
-        ]);
-
         try {
-            DB::transaction(function () use ($transfer, $validated) {
-                $allApproved = true;
-                $anyPartial = false;
+            // Toda la transacción pesada ocurre dentro del Action, aislada del HTTP
+            app(ApproveTransferAction::class)->execute(
+                $transfer,
+                $request->validated()['details'],
+                Auth::id()
+            );
 
-                foreach ($validated['details'] as $item) {
-                    $detail = TransferDetail::findOrFail($item['id']);
-                    $requested = $detail->quantity_requested;
-                    $sent = $item['quantity_sent'];
-
-                    if ($sent > $requested) {
-                        throw new \Exception('La cantidad enviada no puede superar la solicitada.');
-                    }
-
-                    // Validación de stock real con bloqueo
-                    $product = Product::lockForUpdate()->find($detail->product_id);
-                    if ($sent > $product->stock) {
-                            throw new BusinessRuleException("No hay stock suficiente de {$product->name} en la cooperativa. Stock disponible: {$product->stock}.");                    }
-
-                    $detail->update(['quantity_sent' => $sent]);
-
-                    if ($sent == 0) $allApproved = false;
-                    if ($sent > 0 && $sent < $requested) $anyPartial = true;
-                }
-
-                $status = StatusEnum::APPROVED;
-                if (!$allApproved && !$anyPartial) $status = StatusEnum::REJECTED;
-                elseif ($anyPartial) $status = StatusEnum::PARTIALLY_APPROVED;
-
-                $transfer->update([
-                    'user_authorizes' => Auth::id(),
-                    'status' => $status,
-                ]);
-
-                // Notificaciones
-                $requester = User::find($transfer->requesting_user);
-                if ($requester) {
-                    $requester->notify(new TransferApproved($transfer));
-                }
-
-                $bodegas = User::role('Bodega')->where('office_id', $transfer->originating_branch)->get();
-                foreach ($bodegas as $bodega) {
-                    $bodega->notify(new TransferReadyToShip($transfer));
-                    if ($bodega->number) {
-                        $bodega->notify(new TransferWhatsappNotification($transfer, 'transfer_approved', [(string) $transfer->id, route('transfers.show', $transfer)]));
-                    }
-                }
-            });
         } catch (BusinessRuleException $e) {
+            // Captura limpia de errores controlados de negocio
             return redirect()->route('transfers.show', $transfer)
                 ->with('error', $e->getMessage());
         }
 
-        return redirect()->route('transfers.show', $transfer)->with('success', 'Transferencia procesada y validada correctamente.');
+        return redirect()->route('transfers.show', $transfer)
+            ->with('success', 'Transferencia procesada y validada correctamente.');
     }
 
     public function show(Transfer $transfer)
     {
-        $transfer->load(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product']);
-        $user = Auth::user();
-        $canApprove = $user->hasRole('Administrador') && $transfer->status === StatusEnum::PENDING;
-        $canShip = $user->hasRole('Bodega') && $user->office_id == $transfer->originating_branch && in_array($transfer->status, [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED]);
-        $canReceive = $user->hasRole('Administrador Restaurante') && $user->office_id == $transfer->destination_branch && $transfer->status === StatusEnum::SHIPPED;
-
-        return view('pages.transfers.show', compact('transfer', 'canApprove', 'canShip', 'canReceive'));
+       $transfer->load(['originatingBranch', 'destinationBranch', 'requestingUser', 'authorizingUser', 'details.product']);
+        return view('pages.transfers.show', compact('transfer'));
     }
 
     public function ship(Transfer $transfer)
     {
-        $user = Auth::user();
-        if (!$user->hasRole('Bodega') || $user->office_id != $transfer->originating_branch || !in_array($transfer->status, [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED])) {
-            abort(403, 'No autorizado.');
-        }
+        Gate::authorize('ship', $transfer);
 
         app(ShipTransferAction::class)->execute($transfer);
 
@@ -195,10 +114,7 @@ class TransferController extends Controller
 
     public function receive(Transfer $transfer)
     {
-        $user = Auth::user();
-        if (!$user->hasRole('Administrador Restaurante') || $user->office_id != $transfer->destination_branch || $transfer->status !== StatusEnum::SHIPPED) {
-            abort(403, 'No autorizado.');
-        }
+        Gate::authorize('receive', $transfer);
 
         app(ReceiveTransferAction::class)->execute($transfer);
 
@@ -207,9 +123,7 @@ class TransferController extends Controller
 
     public function reject(Transfer $transfer)
     {
-        if (!Auth::user()->hasRole('Administrador') || $transfer->status !== StatusEnum::PENDING) {
-            abort(403, 'No autorizado.');
-        }
+        Gate::authorize('reject', $transfer);
         $transfer->update(['status' => StatusEnum::REJECTED]);
         return redirect()->route('transfers.index')->with('error', 'Transferencia rechazada.');
     }

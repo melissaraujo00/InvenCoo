@@ -4,14 +4,13 @@ namespace App\Notifications;
 
 use App\Models\Transfer;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
-use Illuminate\Contracts\Queue\ShouldQueue; // Estricto para segundo plano
+use NotificationChannels\WhatsApp\Component;
 use NotificationChannels\WhatsApp\WhatsAppChannel;
 use NotificationChannels\WhatsApp\WhatsAppTemplate;
-use NotificationChannels\WhatsApp\Component;
 
-
-class TransferRequested extends Notification implements ShouldQueue
+class TransferShipped extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -22,12 +21,10 @@ class TransferRequested extends Notification implements ShouldQueue
         $this->transfer = $transfer;
     }
 
-    // El cerebro del canal: decide dinámicamente a dónde va el mensaje
-    public function via($notifiable): array
+    public function via($notifiable)
     {
         $channels = ['database'];
 
-        // Si el usuario tiene número de teléfono, activamos WhatsApp automáticamente
         if (!empty($notifiable->number)) {
             $channels[] = WhatsAppChannel::class;
         }
@@ -35,23 +32,21 @@ class TransferRequested extends Notification implements ShouldQueue
         return $channels;
     }
 
-    // Canal 1: Base de datos interna
-    public function toDatabase($notifiable): array
+    public function toDatabase($notifiable)
     {
         return [
-            'title' => 'Nueva transferencia solicitada',
-            'message' => "Se ha solicitado la transferencia #{$this->transfer->id} hacia la sucursal de destino.",
+            'title' => 'Transferencia enviada',
+            'message' => "Los productos de la transferencia #{$this->transfer->id} ya van en camino a tu sucursal.",
             'transfer_id' => $this->transfer->id,
-            'type' => 'transfer_request',
+            'type' => 'transfer_shipped',
             'url' => route('transfers.show', $this->transfer),
         ];
     }
 
-    // Canal 2: WhatsApp (Meta API)
     public function toWhatsApp($notifiable)
     {
         return WhatsAppTemplate::create()
-            ->name('transfer_request_admin')
+            ->name('transfer_shipped_admin') // <-- CAMBIA ESTO por el nombre real de tu plantilla en Meta
             ->to($notifiable->number)
             ->language('es_MX')
             ->body(Component::text((string) $this->transfer->id))

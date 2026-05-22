@@ -33,20 +33,33 @@ class UserController extends Controller
         return view('pages.users.create', compact('offices', 'roles'));
     }
 
-    public function store(StoreUserRequest $request)
+   public function store(StoreUserRequest $request)
     {
         $data = $request->validated();
+
+        // 1. Sanitización estricta del número de teléfono
+        if (!empty($data['number'])) {
+            // Quitamos cualquier espacio, guion o carácter raro
+            $cleanNumber = preg_replace('/[^0-9]/', '', $data['number']);
+            // Si el número no empieza con 503, se lo agregamos
+            if (!str_starts_with($cleanNumber, '503')) {
+                $cleanNumber = '503' . $cleanNumber;
+            }
+            $data['number'] = $cleanNumber;
+        }
+
         $data['password'] = Hash::make($data['password']);
 
         $user = User::create($data);
-        
-        // Optimización: syncRoles acepta IDs nativamente, no necesitamos consultar los nombres
+
         if ($request->has('roles') && !empty($request->roles)) {
             $user->syncRoles(array_map('intval', $request->roles));
         }
 
         return redirect()->route('users.index')->with('success', 'Usuario creado exitosamente.');
     }
+
+
 
     public function edit(User $user)
     {
@@ -61,6 +74,15 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
+        // 1. Sanitización estricta del número de teléfono
+        if (!empty($data['number'])) {
+            $cleanNumber = preg_replace('/[^0-9]/', '', $data['number']);
+            if (!str_starts_with($cleanNumber, '503')) {
+                $cleanNumber = '503' . $cleanNumber;
+            }
+            $data['number'] = $cleanNumber;
+        }
+
         if (!empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         } else {
@@ -69,7 +91,6 @@ class UserController extends Controller
 
         $user->update($data);
 
-        // Optimización: syncRoles directo con IDs
         if ($request->has('roles') && !empty($request->roles)) {
             $user->syncRoles(array_map('intval', $request->roles));
         } else {

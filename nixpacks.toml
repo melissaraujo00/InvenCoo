@@ -1,9 +1,9 @@
 [phases.setup]
-# Mantenemos Node 20, pero devolvemos Nginx y el cliente de MySQL al ecosistema
 nixPkgs = ["php82", "php82Packages.composer", "nodejs_20", "nginx", "libmysqlclient"]
 
 [phases.install]
 cmds = [
+    "mkdir -p /var/log/nginx && mkdir -p /var/cache/nginx",
     "composer install --ignore-platform-reqs --no-interaction --optimize-autoloader",
     "npx pnpm@9 i --frozen-lockfile"
 ]

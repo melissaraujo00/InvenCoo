@@ -1,14 +1,11 @@
 [phases.setup]
-# Subimos la versión de Node a la 20 (estándar LTS actual) para evitar bugs de llaves criptográficas
 nixPkgs = ["php82", "php82Packages.composer", "nodejs_20"]
 
 [phases.install]
-# Abandonamos 'corepack' e instalamos pnpm directamente a nivel global usando npm
 cmds = [
-    "npm install -g pnpm@latest",
     "composer install --ignore-platform-reqs --no-interaction --optimize-autoloader",
-    "pnpm i --frozen-lockfile"
+    "npx pnpm@latest i --frozen-lockfile"
 ]
 
 [phases.build]
-cmds = ["pnpm run build"]
+cmds = ["npx pnpm@latest run build"]

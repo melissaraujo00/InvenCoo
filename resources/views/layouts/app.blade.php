@@ -5,6 +5,23 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="manifest" href="/manifest.json">
+        <meta name="theme-color" content="#1e293b">
+        <link rel="apple-touch-icon" href="/images/icon-192.png">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').then(registration => {
+                        console.log('PWA Lista y operando de forma nativa.');
+                    }).catch(error => {
+                        console.error('Error en PWA:', error);
+                    });
+                });
+            }
+        </script>
 
     <title>{{ $title ?? 'Dashboard' }} | InvenCoo</title>
     <style>
@@ -121,12 +138,12 @@
     </div>
 
     {{-- Sistema Global de Notificaciones (Toasts) --}}
-    <div class="fixed bottom-6 right-6 z-[99999] flex flex-col gap-3 w-full max-w-sm pointer-events-none" 
-         x-data="{ show: true }" 
+    <div class="fixed bottom-6 right-6 z-[99999] flex flex-col gap-3 w-full max-w-sm pointer-events-none"
+         x-data="{ show: true }"
          x-init="setTimeout(() => show = false, 5000)">
-        
+
         @if(session('success'))
-            <div x-show="show" 
+            <div x-show="show"
                  class="pointer-events-auto"
                  x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0 translate-y-4"
@@ -139,7 +156,7 @@
         @endif
 
         @if(session('error'))
-            <div x-show="show" 
+            <div x-show="show"
                  class="pointer-events-auto"
                  x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0 translate-y-4"

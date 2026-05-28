@@ -39,7 +39,7 @@ class TransferShipped extends Notification implements ShouldQueue
             'message' => "Los productos de la transferencia #{$this->transfer->id} ya van en camino a tu sucursal.",
             'transfer_id' => $this->transfer->id,
             'type' => 'transfer_shipped',
-            'url' => route('transfers.show', $this->transfer),
+            'url' => route('transfers.show', $this->transfer, false),
         ];
     }
 

@@ -43,7 +43,7 @@ class TransferRequested extends Notification implements ShouldQueue
             'message' => "Se ha solicitado la transferencia #{$this->transfer->id} hacia la sucursal de destino.",
             'transfer_id' => $this->transfer->id,
             'type' => 'transfer_request',
-            'url' => route('transfers.show', $this->transfer),
+            'url' => route('transfers.show', $this->transfer, false),
         ];
     }
 

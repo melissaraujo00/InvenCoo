@@ -36,7 +36,7 @@ class TransferReadyToShip extends Notification implements ShouldQueue
         return [
             'transfer_id' => $this->transfer->id,
             'message' => '📦 Transferencia #' . $this->transfer->id . ' lista para enviar',
-            'url' => route('transfers.show', $this->transfer),
+            'url' => route('transfers.show', $this->transfer, false),
             'destination' => $this->transfer->destinationBranch->name,
         ];
     }

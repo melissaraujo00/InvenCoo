@@ -51,7 +51,7 @@ class PurchaseRequestApproved extends Notification implements ShouldQueue
             'message' => "Se necesita realizar la compra #{$this->purchase->id} por favor proceder con la compra lo mas pronto posible.",
             'purchase_request_id' => $this->purchase->id,
             'type' => 'purchase_request',
-            'url' => route('purchases.show', $this->purchase),
+            'url' => route('purchases.show', $this->purchase, false),
         ];
     }
 

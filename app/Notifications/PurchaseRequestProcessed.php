@@ -52,7 +52,7 @@ class PurchaseRequestProcessed extends Notification implements ShouldQueue
             'message' => "Su compra solicitada #{$this->purchase->id} fue procesada exitosamente..",
             'purchase_request_id' => $this->purchase->id,
             'type' => 'purchase_request',
-            'url' => route('purchases.show', $this->purchase),
+            'url' => route('purchases.show', $this->purchase, false),
         ];
     }
 

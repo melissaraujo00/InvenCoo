@@ -41,7 +41,7 @@ class TransferApproved extends Notification implements ShouldQueue
             'message' => "Tu transferencia #{$this->transfer->id} ha sido aprobada. Los productos serán enviados pronto.",
             'transfer_id' => $this->transfer->id,
             'type' => 'transfer_approved',
-            'url' => route('transfers.show', $this->transfer),
+            'url' => route('transfers.show', $this->transfer, false),
         ];
     }
 

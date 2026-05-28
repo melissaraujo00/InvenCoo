@@ -37,7 +37,7 @@ class LowStockNotification extends Notification implements ShouldQueue
             'message' => "El producto {$this->product->name} ha alcanzado su nivel mínimo ({$this->product->stock} unidades restantes).",
             'product_id' => $this->product->id,
             'type' => 'low_stock',
-            'url' => route('products.index', $this->product), // Ajusta la ruta a tu catálogo
+            'url' => route('products.index', $this->product, false), // Ajusta la ruta a tu catálogo
         ];
     }
 

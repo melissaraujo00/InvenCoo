@@ -43,7 +43,7 @@ class PurchaseRequestCreated extends Notification  implements ShouldQueue
             'message' => "Se ha solicitado la compra #{$this->purchase->id} hacia la sucursal de destino.",
             'purchase_request_id' => $this->purchase->id,
             'type' => 'purchase_request',
-            'url' => route('purchases.show', $this->purchase),
+            'url' => route('purchases.show', $this->purchase, false),
         ];
     }
 

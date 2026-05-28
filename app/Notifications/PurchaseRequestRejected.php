@@ -52,7 +52,7 @@ class PurchaseRequestRejected extends Notification implements ShouldQueue
             'message' => "La solicitud de la compra #{$this->purchase->id} ha sido rechazada.",
             'purchase_request_id' => $this->purchase->id,
             'type' => 'purchase_request',
-            'url' => route('purchases.show', $this->purchase),
+            'url' => route('purchases.show', $this->purchase, false),
         ];
     }
 

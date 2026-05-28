@@ -38,7 +38,7 @@ class TransferReceived extends Notification implements ShouldQueue
             'message' => "La transferencia #{$this->transfer->id} ha sido recibida por el restaurante.",
             'transfer_id' => $this->transfer->id,
             'type' => 'transfer_received',
-            'url' => route('transfers.show', $this->transfer),
+            'url' => route('transfers.show', $this->transfer, false),
         ];
     }
 

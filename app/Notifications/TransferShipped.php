@@ -46,10 +46,9 @@ class TransferShipped extends Notification implements ShouldQueue
     public function toWhatsApp($notifiable)
     {
         return WhatsAppTemplate::create()
-            ->name('transfer_shipped_admin') 
+            ->name('transfer_shipped_admin')
             ->to($notifiable->number)
             ->language('es_MX')
-            ->body(Component::text((string) $this->transfer->id))
-            ->body(Component::text(route('transfers.show', $this->transfer)));
+            ->body(Component::text((string) $this->transfer->id));
     }
 }

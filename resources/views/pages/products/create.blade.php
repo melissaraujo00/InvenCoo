@@ -80,7 +80,7 @@
                             </x-form.group>
                         </div>
                         <div class="w-full md:w-1/3">
-                           <x-form.group name="unit_id" label="Unidad" :required="false">
+                           <x-form.group name="unit_id" label="Unidad" :required="true">
                                 <x-form.select
                                     name="unit_id"
                                     :options="$units->pluck('name', 'id')"

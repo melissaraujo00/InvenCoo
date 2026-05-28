@@ -35,8 +35,8 @@ class MenuHelper
             ],
             [
                 'icon'=> 'box',
-                'name' => 'Movimientos', 
-                'path' => '/movements', 
+                'name' => 'Movimientos',
+                'path' => '/movements',
                 'permission' => 'ver movimientos'
             ],
             [
@@ -48,6 +48,16 @@ class MenuHelper
                 'icon' => 'task',
                 'name' => 'Transferencias',
                 'path' => '/transfers',
+            ],
+            [
+                'icon' => 'ecommerce',
+                'name' => 'Solicitar Compra',
+                'path' => '/purchases',
+            ],
+            [
+                'icon' => 'ecommerce',
+                'name' => 'Reportes',
+                'path' => '/reports',
             ],
             [
                 'icon' => 'user-profile',

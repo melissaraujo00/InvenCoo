@@ -13,7 +13,6 @@ use App\Http\Requests\StoreTransferRequest;
 use App\Models\Office;
 use App\Models\Product;
 use App\Models\Transfer;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
@@ -31,7 +30,7 @@ class TransferController extends Controller
 
             $pendingShipments = Transfer::with(['destinationBranch', 'requestingUser', 'details.product'])
                 ->where('originating_branch', $user->office_id)
-                ->whereIn('status', [\App\Enums\StatusEnum::APPROVED, \App\Enums\StatusEnum::PARTIALLY_APPROVED])
+                ->whereIn('status', [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED])
                 ->orderBy('updated_at', 'desc')
                 ->get();
 

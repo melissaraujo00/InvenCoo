@@ -84,4 +84,16 @@ class User extends Authenticatable
     {
         return $this->hasMany(Transfer::class, 'user_authorizes');
     }
+
+    // Solicitudes de compra creadas por este usuario
+    public function purchaseRequestsCreated()
+    {
+        return $this->hasMany(PurchaseRequest::class, 'requesting_user_id');
+    }
+
+    // Solicitudes de compra autorizadas por este usuario
+    public function purchaseRequestsAuthorized()
+    {
+        return $this->hasMany(PurchaseRequest::class, 'authorizing_user_id');
+    }
 }

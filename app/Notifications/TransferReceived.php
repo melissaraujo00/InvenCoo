@@ -48,7 +48,6 @@ class TransferReceived extends Notification implements ShouldQueue
             ->name('transfer_received_admin')
             ->to($notifiable->number)
             ->language('es_MX')
-            ->body(Component::text((string) $this->transfer->id))
-            ->body(Component::text(route('transfers.show', $this->transfer)));
+            ->body(Component::text((string) $this->transfer->id));
     }
 }

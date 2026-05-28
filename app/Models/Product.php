@@ -72,5 +72,10 @@ class Product extends Model
         return $this->belongsTo(Unit::class);
     }
 
+     public function purchaseRequestDetails()
+    {
+        return $this->hasMany(PurchaseRequestDetail::class);
+    }
+
 }
 

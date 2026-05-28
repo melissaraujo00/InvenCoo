@@ -20,7 +20,7 @@ class StoreProductRequest extends FormRequest
             'brand_id'            => 'nullable|exists:brands,id',
             'stock'               => 'required|integer|min:0',
             'stock_minimun'       => 'required|integer|min:0',
-            'unit_id'             => 'nullable|exists:units,id',
+            'unit_id'             => 'required|exists:units,id',
             'suppliers'           => 'nullable|array',
             'suppliers.*.id'      => 'required|exists:suppliers,id',
             'suppliers.*.price'   => 'required|numeric|min:0',
@@ -37,7 +37,7 @@ class StoreProductRequest extends FormRequest
             // 'office_id'         => 'oficina',
             'stock'               => 'stock',
             'stock_minimun'       => 'stock mínimo',
-            'unit'                => 'unidad',
+            'unit_id'                => 'unidad',
             'suppliers'           => 'proveedores',
             'suppliers.*.price'   => 'precio',
         ];
@@ -47,13 +47,12 @@ class StoreProductRequest extends FormRequest
     {
         return [
            // 'code.required'       => 'El :attribute es obligatorio',
-            'name.required'       => 'El :attribute es obligatorio',
-            'name.regex'          => 'El :attribute solo puede contener letras y espacios',
-            'category_id.required' => 'La :attribute es obligatoria',
-            'stock.required'      => 'El :attribute es obligatorio',
-            'stock_minimun.required' => 'El :attribute es obligatorio',
-            'unit.required'       => 'La :attribute es obligatoria',
-            'unit.regex'          => 'La :attribute solo puede contener letras y espacios',
+            'name.required'       => 'El Nombre es obligatorio',
+            'name.regex'          => 'El Nombre solo puede contener letras y espacios',
+            'category_id.required' => 'La categoria es obligatoria',
+            'stock.required'      => 'El stock es obligatorio',
+            'stock_minimun.required' => 'El stock es obligatorio',
+            'unit_id.required'       => 'La unidad es obligatoria',
             'suppliers.*.id.required' => 'Debe seleccionar un proveedor',
             'suppliers.*.price.required' => 'El precio del proveedor es obligatorio',
         ];

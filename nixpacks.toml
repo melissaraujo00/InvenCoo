@@ -1,15 +1,14 @@
 [phases.setup]
-# Declaramos explícitamente las dependencias de Nix, omitiendo pnpm para evitar el choque
-nixPkgs = ["php82", "php82Packages.composer", "nodejs_18"]
+# Subimos la versión de Node a la 20 (estándar LTS actual) para evitar bugs de llaves criptográficas
+nixPkgs = ["php82", "php82Packages.composer", "nodejs_20"]
 
 [phases.install]
-# Habilitamos pnpm nativamente desde Node e instalamos las dependencias
+# Abandonamos 'corepack' e instalamos pnpm directamente a nivel global usando npm
 cmds = [
-    "corepack enable pnpm",
+    "npm install -g pnpm@latest",
     "composer install --ignore-platform-reqs --no-interaction --optimize-autoloader",
     "pnpm i --frozen-lockfile"
 ]
 
 [phases.build]
-# Compilamos el frontend
 cmds = ["pnpm run build"]

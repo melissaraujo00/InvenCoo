@@ -1,0 +1,15 @@
+[phases.setup]
+# Declaramos explícitamente las dependencias de Nix, omitiendo pnpm para evitar el choque
+nixPkgs = ["php82", "php82Packages.composer", "nodejs_18"]
+
+[phases.install]
+# Habilitamos pnpm nativamente desde Node e instalamos las dependencias
+cmds = [
+    "corepack enable pnpm",
+    "composer install --ignore-platform-reqs --no-interaction --optimize-autoloader",
+    "pnpm i --frozen-lockfile"
+]
+
+[phases.build]
+# Compilamos el frontend
+cmds = ["pnpm run build"]

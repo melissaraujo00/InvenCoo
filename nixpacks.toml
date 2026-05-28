@@ -1,5 +1,6 @@
 [phases.setup]
-nixPkgs = ["php82", "php82Packages.composer", "nodejs_20"]
+# Mantenemos Node 20, pero devolvemos Nginx y el cliente de MySQL al ecosistema
+nixPkgs = ["php82", "php82Packages.composer", "nodejs_20", "nginx", "libmysqlclient"]
 
 [phases.install]
 cmds = [

@@ -20,40 +20,63 @@ class UserSeeder extends Seeder
 
         // Lista de permisos
         $permissions = [
+            //usuarios
             'ver usuarios',
             'crear usuarios',
             'editar usuarios',
             'eliminar usuarios',
+            //inventario
             'ver inventario',
             'ver categorias',
+            'ver marcas',
+            'ver productos',
+            'ver proveedores',
+            //categoria
             'crear categoria',
             'editar categoria',
             'eliminar categoria',
-            'ver marcas',
+            //marcas
             'crear marca',
             'editar marca',
             'eliminar marca',
-            'ver productos',
+            //productos
             'crear producto',
             'editar producto',
             'eliminar producto',
+            //roles
             'ver Roles y Permisos',
             'Ver Roles',
             'Crear Rol',
             'Editar Rol',
+            'Elimnar Rol',
             'Ver Permisos',
             'Crear Permiso',
             'Editar Permiso',
+            //movimiento
             'Ver Movimientos y Tipos',
-            'Ver Tipo Movimiento',
-            'Crear Tipo Movimiento',
-            'Editar Tipo Movimiento',
-            'Eliminar Tipo Movimiento',
             'ver movimientos',
             'crear movimientos',
             'editar movimientos',
             'eliminar movimientos',
-            'ver proveedores',
+
+            //proveedores
+            'crear proveedor',
+            'editar proveedor',
+            'eliminar proveedor',
+
+            //compras
+            'ver compras',
+            'crear compra',
+            'editar compra',
+            'anular compra',
+            //tranferncias
+            'ver transferencias',
+            'crear transferencia',
+            //solicitar
+            'solicitar compra',
+            'crear solicitud compra',
+            //reportes
+            'ver reportes',
             'Aprobar'
 
         ];

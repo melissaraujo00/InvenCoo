@@ -14,20 +14,21 @@
                     Listado maestro de fabricantes y marcas
                 </p>
             </div>
-
+            @can('crear marca')
             <x-form.button href="{{ route('brands.create') }}" variant="primary" size="md">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
                 Nueva Marca
             </x-form.button>
+            @endcan
         </div>
 
         {{-- Tabla de Marcas --}}
-        <x-tables.table 
-            title="Listado de Marcas" 
-            :headers="['Marca', 'Descripción']" 
-            :paginator="$brands" 
+        <x-tables.table
+            title="Listado de Marcas"
+            :headers="['Marca', 'Descripción']"
+            :paginator="$brands"
             :searchable="true"
             emptyMessage="No hay marcas registradas"
         >
@@ -51,7 +52,7 @@
                     {{-- Acciones --}}
                     <td class="px-4 py-4 whitespace-nowrap">
                         <div class="flex justify-end gap-3 text-gray-500 dark:text-gray-400">
-                            
+
                             {{-- 1. Modal de Detalles (El Ojo con stroke correcto) --}}
                             <x-modal.details title="Información de la Marca" size="md">
                                 <x-slot name="trigger">
@@ -78,24 +79,27 @@
                             </x-modal.details>
 
                             {{-- 2. Botón Editar (Página dedicada) --}}
+                            @can('editar marca')
                             <a href="{{ route('brands.edit', $brand->id) }}"
-                                class="hover:text-yellow-600 transition-colors p-1" 
+                                class="hover:text-yellow-600 transition-colors p-1"
                                 title="Editar marca">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                             </a>
+                            @endcan
 
                             {{-- 3. Modal de Confirmación para Eliminar --}}
-                            <x-modal.confirmation 
-                                title="Eliminar Marca" 
-                                :message="'¿Estás seguro que deseas eliminar la marca'" 
+                            @can('eliminar marca')
+                            <x-modal.confirmation
+                                title="Eliminar Marca"
+                                :message="'¿Estás seguro que deseas eliminar la marca'"
                                 :itemName="$brand->name"
-                                warning="Esta acción no se puede deshacer y fallará si la marca tiene productos asociados." 
+                                warning="Esta acción no se puede deshacer y fallará si la marca tiene productos asociados."
                                 confirmText="Sí, eliminar"
-                                confirmVariant="danger" 
-                                :action="route('brands.destroy', $brand->id)" 
-                                method="DELETE" 
+                                confirmVariant="danger"
+                                :action="route('brands.destroy', $brand->id)"
+                                method="DELETE"
                                 icon="danger"
                             >
                                 <x-slot name="trigger">
@@ -106,6 +110,7 @@
                                     </button>
                                 </x-slot>
                             </x-modal.confirmation>
+                            @endcan
 
                         </div>
                     </td>

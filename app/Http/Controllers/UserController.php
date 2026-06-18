@@ -9,10 +9,23 @@ use App\Models\User;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 
-class UserController extends Controller
+class UserController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            // El framework evaluará esto antes de dejar entrar a nadie
+            new Middleware('can:ver usuarios', only: ['index', 'show']),
+            new Middleware('can:crear usuarios', only: ['create', 'store']),
+            new Middleware('can:editar usuarios', only: ['edit', 'update']),
+            new Middleware('can:eliminar usuarios', only: ['destroy']),
+        ];
+    }
+
     public function index(Request $request)
     {
         $users = User::with(['office', 'roles'])

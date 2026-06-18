@@ -45,6 +45,7 @@
                 @php
                     $groupedPermissions = $permissions->groupBy(function($p) {
                         $name = strtolower($p->name);
+
                         if(str_contains($name, 'usuario')) return 'Gestión de Usuarios';
                         if(str_contains($name, 'rol') || str_contains($name, 'permiso')) return 'Roles y Permisos';
                         if(str_contains($name, 'categor')) return 'Categorías';
@@ -52,6 +53,12 @@
                         if(str_contains($name, 'producto') || str_contains($name, 'inventario')) return 'Productos e Inventario';
                         if(str_contains($name, 'movimiento')) return 'Movimientos';
                         if(str_contains($name, 'proveedor')) return 'Proveedores';
+                        // Corrección: minúsculas y se añade 'solicit' para atrapar 'solicitar compra' y 'crear solicitud compra'
+                        if(str_contains($name, 'compra') || str_contains($name, 'solicit')) return 'Compras y Solicitudes';
+                        // Corrección: minúsculas
+                        if(str_contains($name, 'transferencia')) return 'Transferencias';
+                        if(str_contains($name, 'reporte')) return 'Reportes';
+
                         return 'Otros Permisos';
                     });
                 @endphp

@@ -16,17 +16,18 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransferController;
 
-// Rutas protegidas (Solo para usuarios logueados)
+// Rutas protegidas (Solo para usuarios autenticados)
 Route::middleware(['auth'])->group(function () {
 
-    // 1. Conexión del Dashboard real
+    // 1. Dashboard Principal
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    // 2. Perfil
+    // 2. Perfil de Usuario
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
-    // 3. Módulos Core (El trabajo de tu pareja)
+    // 3. Módulos de Recursos Estándar (CRUD)
+    // El control de acceso granular se delega al controlador implementando HasMiddleware
     Route::resource('users', UserController::class);
     Route::resource('roles', RoleController::class);
     Route::resource('brands', BrandController::class);
@@ -35,38 +36,62 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('products', ProductController::class);
     Route::resource('movements', MovementController::class);
 
-    // Compras
+    // 4. Módulo de Compras Directas
     Route::resource('buys', BuyController::class);
-    Route::patch('buys/{buy}/cancel', [BuyController::class, 'cancel'])->name('buys.cancel');
-    Route::patch('buys/{buy}/restore', [BuyController::class, 'restore'])->name('buys.restore');
+    Route::patch('buys/{buy}/cancel', [BuyController::class, 'cancel'])
+        ->name('buys.cancel')
+        ->middleware('can:anular compra');
+    Route::patch('buys/{buy}/restore', [BuyController::class, 'restore'])
+        ->name('buys.restore')
+        ->middleware('can:crear compra');
 
-    // Transferencias
+    // 5. Módulo de Transferencias entre Sucursales
     Route::resource('transfers', TransferController::class)->except(['edit', 'update', 'destroy']);
-    Route::patch('transfers/{transfer}/approve', [TransferController::class, 'approve'])->name('transfers.approve');
-    Route::patch('transfers/{transfer}/ship', [TransferController::class, 'ship'])->name('transfers.ship');
-    Route::patch('transfers/{transfer}/receive', [TransferController::class, 'receive'])->name('transfers.receive');
-    Route::patch('transfers/{transfer}/reject', [TransferController::class, 'reject'])->name('transfers.reject');
+    Route::patch('transfers/{transfer}/approve', [TransferController::class, 'approve'])
+        ->name('transfers.approve')
+        ->middleware('can:Aprobar');
+    Route::patch('transfers/{transfer}/ship', [TransferController::class, 'ship'])
+        ->name('transfers.ship')
+        ->middleware('can:editar transferencia');
+    Route::patch('transfers/{transfer}/receive', [TransferController::class, 'receive'])
+        ->name('transfers.receive')
+        ->middleware('can:editar transferencia');
+    Route::patch('transfers/{transfer}/reject', [TransferController::class, 'reject'])
+        ->name('transfers.reject')
+        ->middleware('can:editar transferencia');
 
+    // 6. Módulo de Solicitudes de Compra
     Route::resource('purchases', PurchaseRequestController::class)->except(['edit', 'update', 'destroy']);
+    Route::patch('purchases/{purchaseRequest}/approve', [PurchaseRequestController::class, 'approve'])
+        ->name('purchases.approve')
+        ->middleware('can:Aprobar');
+    Route::patch('purchases/{purchaseRequest}/reject', [PurchaseRequestController::class, 'reject'])
+        ->name('purchases.reject')
+        ->middleware('can:Aprobar');
+    Route::patch('purchases/{purchaseRequest}/process', [PurchaseRequestController::class, 'process'])
+        ->name('purchases.process')
+        ->middleware('can:crear compra');
 
-    // Cambios de estado de Compras
-    Route::patch('purchases/{purchaseRequest}/approve', [PurchaseRequestController::class, 'approve'])->name('purchases.approve');
-    Route::patch('purchases/{purchaseRequest}/reject', [PurchaseRequestController::class, 'reject'])->name('purchases.reject');
-    Route::patch('purchases/{purchaseRequest}/process', [PurchaseRequestController::class, 'process'])->name('purchases.process');
+    // 7. Centro de Reportes (Protección unificada de extremo a extremo)
+    Route::prefix('reports')
+        ->name('reports.')
+        ->middleware('can:ver reportes')
+        ->group(function () {
+            Route::get('/', [ReportController::class, 'index'])->name('index');
+            Route::get('/movements', [ReportController::class, 'exportMovements'])->name('movements');
+            Route::get('/products', [ReportController::class, 'exportProducts'])->name('products');
+        });
 
-    // --- CENTRO DE REPORTES ---
-    Route::prefix('reports')->name('reports.')->group(function () {
-        // La pantalla principal donde el usuario elige el reporte
-        Route::get('/', [App\Http\Controllers\ReportController::class, 'index'])->name('index');
-
-        // Las rutas de generación de cada documento
-        Route::get('/movements', [App\Http\Controllers\ReportController::class, 'exportMovements'])->name('movements');
-        Route::get('/products', [App\Http\Controllers\ReportController::class, 'exportProducts'])->name('products');
-    });
-    // Notificaciones
+    // 8. API interna de Notificaciones
     Route::get('/notifications/fetch', [NotificationController::class, 'fetch'])->name('notifications.fetch');
     Route::post('/notifications/mark-read/{id}', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+
+    Route::fallback(function () {
+    return response()->view('pages.errors.error-404', ['title' => 'Página no encontrada'], 404);
+    });
+
+
 });
 
 require __DIR__ . '/auth.php';

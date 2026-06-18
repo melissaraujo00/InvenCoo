@@ -43,21 +43,25 @@ class MenuHelper
                 'icon' => 'ecommerce',
                 'name' => 'Compras',
                 'path' => '/buys',
+                'permission' => 'ver compras'
             ],
             [
                 'icon' => 'task',
                 'name' => 'Transferencias',
                 'path' => '/transfers',
+                'permission' => 'ver transferencias'
             ],
             [
                 'icon' => 'ecommerce',
                 'name' => 'Solicitar Compra',
                 'path' => '/purchases',
+                'permission' => 'solicitar compra'
             ],
             [
                 'icon' => 'ecommerce',
                 'name' => 'Reportes',
                 'path' => '/reports',
+                'permission' => 'ver reportes'
             ],
             [
                 'icon' => 'user-profile',

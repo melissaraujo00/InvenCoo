@@ -14,12 +14,14 @@
                     Historial de adquisiciones y entradas de almacén
                 </p>
             </div>
+            @can('crear compra')
             <x-form.button href="{{ route('buys.create') }}" variant="primary" size="md">
                 <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Nueva Compra
             </x-form.button>
+            @endcan
         </div>
 
         {{-- Tabla de Compras (Sin 'Acciones' en el header para evitar duplicidad) --}}
@@ -61,7 +63,7 @@
                             </span>
                         @endif
                     </td>
-                    
+
                     {{-- Acciones Estandarizadas --}}
                     <td class="px-4 py-4 whitespace-nowrap">
                         <div class="flex justify-end gap-3 text-gray-500 dark:text-gray-400">
@@ -74,6 +76,7 @@
                             </a>
 
                             {{-- Editar --}}
+                            @can('editar compra')
                             @role('Administrador')
                                 @if(!$buy->is_cancelled)
                                     <a href="{{ route('buys.edit', $buy->id) }}" class="hover:text-yellow-600 transition-colors" title="Editar compra">
@@ -83,18 +86,20 @@
                                     </a>
                                 @endif
                             @endrole
+                            @endcan
 
                             {{-- Anular/Restaurar con Modales de Confirmación --}}
+                            @can('anular compra')
                             @if(!$buy->is_cancelled)
-                                <x-modal.confirmation 
-                                    title="Anular Compra" 
-                                    :message="'¿Estás seguro que deseas anular la compra'" 
+                                <x-modal.confirmation
+                                    title="Anular Compra"
+                                    :message="'¿Estás seguro que deseas anular la compra'"
                                     :itemName="'#' . $buy->id"
-                                    warning="Se restará el stock de los productos comprados y se registrará un movimiento de salida." 
+                                    warning="Se restará el stock de los productos comprados y se registrará un movimiento de salida."
                                     confirmText="Sí, anular"
-                                    confirmVariant="danger" 
-                                    :action="route('buys.cancel', $buy->id)" 
-                                    method="PATCH" 
+                                    confirmVariant="danger"
+                                    :action="route('buys.cancel', $buy->id)"
+                                    method="PATCH"
                                     icon="danger"
                                 >
                                     <x-slot name="trigger">
@@ -106,6 +111,7 @@
                                     </x-slot>
                                 </x-modal.confirmation>
                             @endif
+                            @endcan
                         </div>
                     </td>
                 </tr>

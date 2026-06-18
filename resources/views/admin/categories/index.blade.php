@@ -16,25 +16,27 @@
             </div>
 
             {{-- Botón estandarizado con nuestro componente --}}
+            @can('crear categoria')
             <x-form.button href="{{ route('categories.create') }}" variant="primary" size="md">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
                 Nueva Categoría
             </x-form.button>
+            @endcan
         </div>
 
         {{-- Tabla de Categorías --}}
-        <x-tables.table 
-            title="Listado de categorías" 
-            :headers="['Categoría', 'Descripción']" 
-            :paginator="$categories" 
+        <x-tables.table
+            title="Listado de categorías"
+            :headers="['Categoría', 'Descripción']"
+            :paginator="$categories"
             :searchable="true"
             emptyMessage="No hay categorías registradas"
         >
             @foreach ($categories as $category)
                 <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors">
-                    
+
                     {{-- Nombre --}}
                     <td class="px-4 py-4 whitespace-nowrap">
                         <span class="text-sm font-medium text-gray-900 dark:text-white">
@@ -52,7 +54,7 @@
                     {{-- Acciones --}}
                     <td class="px-4 py-4 whitespace-nowrap">
                         <div class="flex justify-end gap-3 text-gray-500 dark:text-gray-400">
-                            
+
                             {{-- Botón Ver (Opcional: puedes dejarlo como modal o crear la vista show) --}}
                             {{-- Por ahora, si no tienes vista show, podemos dejarlo como modal de solo lectura --}}
                             <x-modal.details title="Detalles de la Categoría" size="md">
@@ -77,24 +79,26 @@
                             </x-modal.details>
 
                             {{-- Botón Editar (Página dedicada) --}}
+                            @can('editar categoria')
                             <a href="{{ route('categories.edit', $category->id) }}"
-                                class="hover:text-yellow-600 transition-colors p-1" 
+                                class="hover:text-yellow-600 transition-colors p-1"
                                 title="Editar categoría">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                             </a>
-
+                            @endcan
                             {{-- Modal de Confirmación para Eliminar (Único modal que se mantiene por seguridad) --}}
-                            <x-modal.confirmation 
-                                title="Eliminar categoría" 
-                                :message="'¿Estás seguro que deseas eliminar la categoría'" 
+                            @can('eliminar categoria')
+                            <x-modal.confirmation
+                                title="Eliminar categoría"
+                                :message="'¿Estás seguro que deseas eliminar la categoría'"
                                 :itemName="$category->name" {{-- Corregido el typo 'namee' --}}
-                                warning="Esta acción es irreversible y fallará si hay productos vinculados." 
+                                warning="Esta acción es irreversible y fallará si hay productos vinculados."
                                 confirmText="Sí, eliminar"
-                                confirmVariant="danger" 
-                                :action="route('categories.destroy', $category->id)" 
-                                method="DELETE" 
+                                confirmVariant="danger"
+                                :action="route('categories.destroy', $category->id)"
+                                method="DELETE"
                                 icon="danger"
                             >
                                 <x-slot name="trigger">
@@ -105,6 +109,7 @@
                                     </button>
                                 </x-slot>
                             </x-modal.confirmation>
+                            @endcan
                         </div>
                     </td>
                 </tr>

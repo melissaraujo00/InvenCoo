@@ -8,9 +8,11 @@
             <h2 class="text-title-md2 font-bold text-gray-800 dark:text-white/90">
                 Listado de Movimientos
             </h2>
+            @can('crear movimientos')
             <x-form.button href="{{ route('movements.create') }}" variant="primary" size="md">
                 Nuevo Ajuste Manual
             </x-form.button>
+            @endcan
         </div>
 
         <x-tables.table

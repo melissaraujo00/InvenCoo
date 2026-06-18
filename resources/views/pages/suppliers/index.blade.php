@@ -14,20 +14,21 @@
                     Directorio de contactos comerciales
                 </p>
             </div>
-
+            @can('crear proveedor')
             <x-form.button href="{{ route('suppliers.create') }}" variant="primary" size="md">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
                 Nuevo Proveedor
             </x-form.button>
+            @endcan
         </div>
 
         {{-- Tabla de Proveedores (Corregidas cabeceras vs columnas) --}}
-        <x-tables.table 
-            title="Listado de Proveedores" 
-            :headers="['Empresa', 'Contacto', 'Teléfono', 'Descripción']" 
-            :paginator="$suppliers" 
+        <x-tables.table
+            title="Listado de Proveedores"
+            :headers="['Empresa', 'Contacto', 'Teléfono', 'Descripción']"
+            :paginator="$suppliers"
             :searchable="true"
             emptyMessage="No hay proveedores registrados"
         >
@@ -39,13 +40,13 @@
                             {{ $supplier->company_name }}
                         </span>
                     </td>
-                    
+
                     <td class="px-4 py-4 whitespace-nowrap">
                         <span class="text-sm text-gray-700 dark:text-gray-300">
                             {{ $supplier->contact_name }}
                         </span>
                     </td>
-                    
+
                     <td class="px-4 py-4 whitespace-nowrap">
                         <span class="text-sm text-gray-700 dark:text-gray-300">
                             {{ $supplier->number_phone }} {{-- Corregido, decía company_name --}}
@@ -62,7 +63,7 @@
                     {{-- Acciones --}}
                     <td class="px-4 py-4 whitespace-nowrap">
                         <div class="flex justify-end gap-3 text-gray-500 dark:text-gray-400">
-                            
+
                             {{-- Modal de Detalles --}}
                             <x-modal.details title="Ficha del Proveedor" size="lg">
                                 <x-slot name="trigger">
@@ -95,23 +96,26 @@
                             </x-modal.details>
 
                             {{-- Botón Editar --}}
+                            @can('editar proveedor')
                             <a href="{{ route('suppliers.edit', $supplier->id) }}"
                                 class="hover:text-yellow-600 transition-colors p-1" title="Editar proveedor">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                             </a>
+                            @endcan
 
+                            @can('eliminar proveedor')
                             {{-- Modal de Eliminar --}}
-                            <x-modal.confirmation 
-                                title="Eliminar Proveedor" 
-                                :message="'¿Estás seguro que deseas eliminar a'" 
+                            <x-modal.confirmation
+                                title="Eliminar Proveedor"
+                                :message="'¿Estás seguro que deseas eliminar a'"
                                 :itemName="$supplier->company_name"
-                                warning="Esta acción no se puede deshacer y fallará si existen productos asociados a este proveedor." 
+                                warning="Esta acción no se puede deshacer y fallará si existen productos asociados a este proveedor."
                                 confirmText="Sí, eliminar"
-                                confirmVariant="danger" 
-                                :action="route('suppliers.destroy', $supplier->id)" 
-                                method="DELETE" 
+                                confirmVariant="danger"
+                                :action="route('suppliers.destroy', $supplier->id)"
+                                method="DELETE"
                                 icon="danger"
                             >
                                 <x-slot name="trigger">
@@ -122,7 +126,7 @@
                                     </button>
                                 </x-slot>
                             </x-modal.confirmation>
-
+                            @endcan
                         </div>
                     </td>
                 </tr>

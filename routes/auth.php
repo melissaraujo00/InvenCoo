@@ -3,24 +3,18 @@
 use App\Http\Controllers\Auth\AuthController;
 use Illuminate\Support\Facades\Route;
 
+// Rutas para invitados (no autenticados)
 Route::middleware('guest')->group(function () {
-    Route::get('/signup', function () {
-        return view('pages.auth.signup', ['title' => 'Sign Up']);
-    })->name('signup');
-
-   // routes/auth.php
-Route::post('/signin', [AuthController::class, 'login'])->name('login');
-
+    // Mostrar formulario de inicio de sesión
     Route::get('/signin', function () {
         return view('pages.auth.signin', ['title' => 'Sign In']);
     })->name('login');
 
-    Route::post('/signup', [AuthController::class, 'register'])->name('signup');
-
-
+    // Procesar inicio de sesión (sin nombre para no duplicar 'login')
+    Route::post('/signin', [AuthController::class, 'login']);
 });
 
-// routes/auth.php
+// Cerrar sesión (requiere autenticación)
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');

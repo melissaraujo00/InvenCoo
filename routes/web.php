@@ -87,9 +87,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/notifications/mark-read/{id}', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
-    Route::fallback(function () {
-    return response()->view('pages.errors.error-404', ['title' => 'Página no encontrada'], 404);
-    });
 
 
 });

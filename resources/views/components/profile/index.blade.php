@@ -1,12 +1,6 @@
 @props(['user'])
 
 <div x-data="profileData()" x-init="init('{{ csrf_token() }}', '{{ route("profile.update") }}')">
-    {{-- Mensaje de éxito --}}
-    @if(session('status'))
-        <div class="mb-4 rounded-lg bg-green-100 p-4 text-green-700 dark:bg-green-800/20 dark:text-green-400">
-            {{ session('status') }}
-        </div>
-    @endif
 
     {{-- Tarjeta de Perfil con Avatar --}}
     <x-profile.avatar :user="$user" />
@@ -48,9 +42,21 @@ function profileData() {
             this.updateRoute = route;
         },
 
+        dispatchToast(message, type = 'success') {
+            window.dispatchEvent(new CustomEvent('notify', { 
+                detail: { message: message, type: type } 
+            }));
+        },
+
         async saveProfile() {
             this.loading = true;
             this.errors = {};
+
+            let payload = { ...this.form };
+            if (!this.showPassword || !payload.password) {
+                delete payload.password;
+                delete payload.password_confirmation;
+            }
 
             try {
                 const response = await fetch(this.updateRoute, {
@@ -58,28 +64,34 @@ function profileData() {
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': this.csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify(this.form)
+                    body: JSON.stringify(payload),
+                    redirect: 'manual'
                 });
 
-                const data = await response.json();
-
-                if (!response.ok) {
-                    if (response.status === 422) {
-                        this.errors = data.errors;
-                    } else {
-                        throw new Error(data.message || 'Error al guardar');
-                    }
+                // Si todo sale bien, cerramos el modal y recargamos.
+                // Laravel se encargará automáticamente de mostrar el Toast nativo.
+                if (response.type === 'opaqueredirect' || response.ok) {
+                    this.open = false;
+                    window.location.reload(); 
                     return;
                 }
 
-                alert('Perfil actualizado correctamente');
-                setTimeout(() => { this.open = false; }, 1500);
+                // Manejo de errores de validación (Estos SÍ usan el Toast de JS)
+                const data = await response.json();
+                
+                if (response.status === 422) {
+                    this.errors = data.errors;
+                    this.dispatchToast('Por favor, revisa los campos marcados en rojo.', 'error');
+                } else {
+                    throw new Error(data.message || 'Error del servidor.');
+                }
 
             } catch (error) {
-                console.error('Error:', error);
-                alert(error.message || 'Error al guardar los cambios');
+                console.error('Error de Fetch:', error);
+                this.dispatchToast('Ocurrió un error en la red al intentar guardar.', 'error');
             } finally {
                 this.loading = false;
             }

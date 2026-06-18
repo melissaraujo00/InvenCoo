@@ -137,13 +137,26 @@
 
     </div>
 
-    {{-- Sistema Global de Notificaciones (Toasts) --}}
+    {{-- Sistema Global de Notificaciones (Híbrido: Servidor + Cliente) --}}
     <div class="fixed bottom-6 right-6 z-[99999] flex flex-col gap-3 w-full max-w-sm pointer-events-none"
-         x-data="{ show: true }"
-         x-init="setTimeout(() => show = false, 5000)">
+         x-data="{ 
+            showServer: true,
+            jsToasts: [],
+            addJsToast(message, type) {
+                const id = Date.now();
+                this.jsToasts.push({ id, message, type });
+                setTimeout(() => {
+                    this.jsToasts = this.jsToasts.filter(t => t.id !== id);
+                }, 5000);
+            }
+         }"
+         x-init="setTimeout(() => showServer = false, 5000)"
+         @notify.window="addJsToast($event.detail.message, $event.detail.type)">
 
-        @if(session('success'))
-            <div x-show="show"
+        {{-- 1. Toasts originados por Laravel (PHP) --}}
+        {{-- Corrección: Ahora también escuchamos la variable 'status' nativa de Laravel --}}
+        @if(session('success') || session('status'))
+            <div x-show="showServer"
                  class="pointer-events-auto"
                  x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0 translate-y-4"
@@ -151,12 +164,12 @@
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0"
                  x-transition:leave-end="opacity-0 translate-y-4">
-                <x-ui.alert variant="success" title="¡Éxito!" :message="session('success')" />
+                <x-ui.alert variant="success" title="¡Éxito!" :message="session('success') ?? session('status')" />
             </div>
         @endif
 
         @if(session('error'))
-            <div x-show="show"
+            <div x-show="showServer"
                  class="pointer-events-auto"
                  x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0 translate-y-4"
@@ -167,6 +180,33 @@
                 <x-ui.alert variant="error" title="Atención" :message="session('error')" />
             </div>
         @endif
+
+        {{-- 2. Toasts originados por AJAX / Alpine.js (Tiempo Real) --}}
+        <template x-for="toast in jsToasts" :key="toast.id">
+            <div class="pointer-events-auto w-full rounded-xl border p-4 shadow-lg backdrop-blur-md"
+                 :class="toast.type === 'success' ? 'bg-green-50 border-green-200 dark:bg-green-500/10 dark:border-green-500/20' : 'bg-red-50 border-red-200 dark:bg-red-500/10 dark:border-red-500/20'"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 translate-y-4">
+                 
+                <div class="flex items-start gap-3">
+                    <div class="flex-1">
+                        <h3 class="text-sm font-bold" 
+                            :class="toast.type === 'success' ? 'text-green-800 dark:text-green-400' : 'text-red-800 dark:text-red-400'" 
+                            x-text="toast.type === 'success' ? '¡Éxito!' : 'Atención'"></h3>
+                        <p class="mt-1 text-sm font-medium" 
+                           :class="toast.type === 'success' ? 'text-green-700 dark:text-green-500' : 'text-red-700 dark:text-red-500'" 
+                           x-text="toast.message"></p>
+                    </div>
+                    <button @click="jsToasts = jsToasts.filter(t => t.id !== toast.id)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </template>
     </div>
 
 </body>

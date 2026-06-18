@@ -22,11 +22,8 @@ class TransferController extends Controller
     {
         $user = Auth::user();
 
-        // 1. El Scope del modelo resuelve el historial general (Paginado)
-        $transfers = Transfer::forUserContext($user)->paginate(15);
-
-        // 2. Si es Bodega, la vista exige sus envíos pendientes
         if ($user->hasRole('Bodega')) {
+
 
             $pendingShipments = Transfer::with(['destinationBranch', 'requestingUser', 'details.product'])
                 ->where('originating_branch', $user->office_id)
@@ -34,10 +31,20 @@ class TransferController extends Controller
                 ->orderBy('updated_at', 'desc')
                 ->get();
 
+            $transfers = Transfer::forUserContext($user)
+                ->whereIn('status', [
+                    StatusEnum::SHIPPED,
+                    StatusEnum::RECEIVED,
+                    StatusEnum::REJECTED
+                ])
+                ->orderBy('updated_at', 'desc')
+                ->paginate(15);
+
             return view('pages.transfers.bodega_index', compact('transfers', 'pendingShipments'));
         }
 
-        // 3. Para el resto de roles (Restaurante, Administrador)
+        $transfers = Transfer::forUserContext($user)->paginate(15);
+
         return view('pages.transfers.index', compact('transfers'));
     }
 

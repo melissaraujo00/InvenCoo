@@ -37,7 +37,7 @@
                         </td>
                         <td class="px-4 py-4 text-sm">
                             {{-- Corrección de ruta: purchases -> buys --}}
-                            <x-form.button href="{{ route('buys.show', $purchase) }}" variant="primary" size="sm">
+                            <x-form.button href="{{ route('purchases.show', $purchase) }}" variant="primary" size="sm">
                                 Procesar
                             </x-form.button>
                         </td>
@@ -80,7 +80,7 @@
                         </td>
                         <td class="px-4 py-4 text-sm">
                             {{-- Corrección de ruta: purchases -> buys --}}
-                            <x-form.button href="{{ route('buys.show', $purchase) }}" variant="secondary" size="sm">
+                            <x-form.button href="{{ route('purchases.show', $purchase) }}" variant="secondary" size="sm">
                                 Ver Detalle
                             </x-form.button>
                         </td>

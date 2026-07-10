@@ -72,6 +72,7 @@ class UserSeeder extends Seeder
             //tranferncias
             'ver transferencias',
             'crear transferencia',
+            'editar transferencia',
             //solicitar
             'solicitar compra',
             'crear solicitud compra',

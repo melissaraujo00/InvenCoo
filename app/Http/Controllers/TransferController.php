@@ -24,6 +24,7 @@ class TransferController extends Controller
 
         if ($user->hasRole('Bodega')) {
 
+
             $pendingShipments = Transfer::with(['destinationBranch', 'requestingUser', 'details.product'])
                 ->where('originating_branch', $user->office_id)
                 ->whereIn('status', [StatusEnum::APPROVED, StatusEnum::PARTIALLY_APPROVED])
@@ -52,19 +53,19 @@ class TransferController extends Controller
         Gate::authorize('create', Transfer::class);
         $user = Auth::user();
 
-        $sourceOffice = Office::where('is_main', true)->firstOrFail(); 
+        $sourceOffice = Office::where('is_main', true)->firstOrFail(); // Cooperativa
         $destinationOffice = Office::find($user->office_id);
 
         $products = Product::with([
         'movementDetails' => function ($query) use ($sourceOffice) {
             $query->whereHas('movement', fn($q) => $q->where('office_id', $sourceOffice->id))
-                  ->latest('id'); 
+                  ->latest('id'); // Trae solo los más recientes para mapearlos en memoria
             }
         ])->get();
 
         $products->each(function ($product) {
-            $lastMovement = $product->movementDetails->first();
-            $product->available_stock = $lastMovement ? $lastMovement->stock_after : ($product->stock ?? 0);
+        $lastMovement = $product->movementDetails->first();
+        $product->available_stock = $lastMovement ? $lastMovement->stock_after : ($product->stock ?? 0);
         });
 
         return view('pages.transfers.create', compact('sourceOffice', 'destinationOffice', 'products'));
@@ -85,6 +86,7 @@ class TransferController extends Controller
     public function approve(ApproveTransferRequest $request, Transfer $transfer)
     {
         try {
+            // Toda la transacción pesada ocurre dentro del Action, aislada del HTTP
             app(ApproveTransferAction::class)->execute(
                 $transfer,
                 $request->validated()['details'],
@@ -92,6 +94,7 @@ class TransferController extends Controller
             );
 
         } catch (BusinessRuleException $e) {
+            // Captura limpia de errores controlados de negocio
             return redirect()->route('transfers.show', $transfer)
                 ->with('error', $e->getMessage());
         }
@@ -108,7 +111,8 @@ class TransferController extends Controller
 
     public function ship(Transfer $transfer)
     {
-        // La validación de acceso ahora recae enteramente en el middleware definido en web.php
+        Gate::authorize('ship', $transfer);
+
         app(ShipTransferAction::class)->execute($transfer);
 
         return redirect()->route('transfers.show', $transfer)->with('success', 'Transferencia enviada con costos registrados.');
@@ -116,7 +120,8 @@ class TransferController extends Controller
 
     public function receive(Transfer $transfer)
     {
-        // Eliminado Gate::authorize para evitar colisión con las rutas
+        Gate::authorize('receive', $transfer);
+
         app(ReceiveTransferAction::class)->execute($transfer);
 
         return redirect()->route('transfers.index')->with('success', 'Transferencia recibida e ingresada al Kardex local con éxito.');
@@ -124,7 +129,7 @@ class TransferController extends Controller
 
     public function reject(Transfer $transfer)
     {
-        // Eliminado Gate::authorize para evitar colisión con las rutas
+        Gate::authorize('reject', $transfer);
         $transfer->update(['status' => StatusEnum::REJECTED]);
         return redirect()->route('transfers.index')->with('error', 'Transferencia rechazada.');
     }

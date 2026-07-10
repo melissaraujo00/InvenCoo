@@ -41,11 +41,11 @@ class ReceiveTransferAction
                     continue;
                 }
 
-                $product = Product::lockForUpdate()->find($detail->product_id);
-                $product->increment('stock', $qty);
+                // LEEMOS el producto solo para saber cuánto stock quedó en bodega para el historial,
+                // PERO NO LO INCREMENTAMOS.
+                $product = Product::find($detail->product_id);
 
                 // Recuperamos el costo exacto con el que salió de bodega
-                // para que el restaurante asimile ese mismo valor en su Kardex
                 $outDetail = MovementDetail::where('movement_id', $transfer->out_movement_id)
                     ->where('product_id', $detail->product_id)
                     ->first();
@@ -58,7 +58,7 @@ class ReceiveTransferAction
                     'quantity'    => $qty,
                     'unit_price'  => $cost,
                     'subtotal'    => $cost * $qty,
-                    'stock_after' => $product->stock,
+                    'stock_after' => $product->stock, // Guarda el stock actual de bodega como referencia
                 ]);
             }
 
